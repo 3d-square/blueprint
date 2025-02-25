@@ -1,9 +1,11 @@
 #include "raylib.h"
 #include "flow.h"
 #include "panel.h"
+#include "button.h"
 #include "cutils.h"
 #include <string.h>
 #include <stdio.h>
+#include "globals.h"
 
 #define MAXCOORDLEN 9
 
@@ -15,6 +17,8 @@ struct branch_panel{
    int mpl2;
    int focus;
    BRANCH_FLOW *branch;
+   BUTTON btn1;
+   BUTTON btn2;
 } branch_panel;
 
 struct node_panel{
@@ -23,6 +27,7 @@ struct node_panel{
    int mpl;
    int focus;
    NODE_FLOW *node;
+   BUTTON btn;
 } node_panel;
 
 void init_panels(){
@@ -35,6 +40,8 @@ void init_panels(){
       .link_midpoint_1 = {0},
       .link_midpoint_2 = {0},
       .branch = NULL,
+      .btn1 = create_button(0, 0, 15, 15, "X", 15),
+      .btn2 = create_button(0, 0, 15, 15, "X", 15),
    };
    node_panel = (struct node_panel){
       .width = 125,
@@ -43,6 +50,7 @@ void init_panels(){
       .focus = 0,
       .link_midpoint = {0},
       .node = NULL,
+      .btn = create_button(0, 0, 15, 15, "X", 15),
    };
 }
 
@@ -79,6 +87,9 @@ void show_branch_flow(){
       sprintf(buffer, "Set: %s", branch_panel.branch->no.to->uuid);
       DrawText(buffer, x + 125, y + 25, 15, WHITE);
    }
+
+   draw_button(&branch_panel.btn1);
+   draw_button(&branch_panel.btn2);
 }
 
 void show_node_flow(){
@@ -104,17 +115,15 @@ void show_node_flow(){
 }
 
 int update_branch_panel(GEN_FLOW *nodes[], int length){
-   Vector2 pos = GetMousePosition();
-
    if(branch_panel.branch != NULL){
-      if(point_in_rect(pos.x, pos.y, branch_panel.branch->x, branch_panel.branch->y, branch_panel.width, branch_panel.height)){
+      if(is_mouse_collision(branch_panel.branch->x, branch_panel.branch->y, branch_panel.width, branch_panel.height)){
          // do more checks to see if point is in 
       }else{
          branch_panel.branch = NULL;
          return -1;
       }
    }else{
-      GEN_FLOW *node = get_node_at(nodes, length, pos.x, pos.y);
+      GEN_FLOW *node = get_node_at(nodes, length, mouse_position.x, mouse_position.y);
       if(node != NULL && node->type == BRANCH){
          branch_panel.branch = (BRANCH_FLOW *)node;
 
@@ -124,6 +133,10 @@ int update_branch_panel(GEN_FLOW *nodes[], int length){
          title_width = MeasureText(title_str, 20);
          branch_panel.mpl1 = strlen(branch_panel.link_midpoint_1);
          branch_panel.mpl2 = strlen(branch_panel.link_midpoint_2);
+         branch_panel.btn1.x = node->x + 15;
+         branch_panel.btn1.y = node->y + 25;
+         branch_panel.btn2.x = node->x + 115;
+         branch_panel.btn2.y = node->y + 25;
       }else{
          return 0;
       }
@@ -133,17 +146,15 @@ int update_branch_panel(GEN_FLOW *nodes[], int length){
 }
 
 int update_node_panel(GEN_FLOW *nodes[], int length){
-   Vector2 pos = GetMousePosition();
-
    if(node_panel.node!= NULL){
-      if(point_in_rect(pos.x, pos.y, node_panel.node->x, node_panel.node->y, node_panel.width, node_panel.height)){
+      if(is_mouse_collision(node_panel.node->x, node_panel.node->y, node_panel.width, node_panel.height)){
          // do more checks to see if point is in 
       }else{
          node_panel.node = NULL;
          return -1;
       }
    }else{
-      GEN_FLOW *node = get_node_at(nodes, length, pos.x, pos.y);
+      GEN_FLOW *node = get_node_at(nodes, length, mouse_position.x, mouse_position.y);
       if(node != NULL && node->type == NODE){
          node_panel.node = (NODE_FLOW *)node;
 

@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "flow.h"
 #include "cutils.h"
+#include "globals.h"
 
 int font_size = 10;
 

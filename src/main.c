@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "flow.h"
 #include "panel.h"
+#include "globals.h"
 
 #define DEBUGF(fmt, ...) printf("[DEBUG]: " fmt, __VA_ARGS__)
 #define DEBUG(f) printf("[DEBUG]: " f "\n")
@@ -48,22 +49,20 @@ int main(void)
    set_node_link((NODE_FLOW *)nodes[2], nodes[4]);
    set_node_link((NODE_FLOW *)nodes[4], nodes[0]);
 
-   Vector2 mouse_pos;
    GEN_FLOW *link_node;
 
    // Main game loop
    while (!WindowShouldClose())    // Detect window close button or ESC key
    {
+      update_globals();
 
       if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)){
          if(link == 0 && focus == 0){
             assert(num_nodes <= MAXGRAPHNODES);
 
-            mouse_pos = GetMousePosition();
-
-            GEN_FLOW *here = get_node_at(nodes, num_nodes, mouse_pos.x, mouse_pos.y);
+            GEN_FLOW *here = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
             if(here == NULL){ // there is no node at this location
-               nodes[num_nodes++] = create_branch(EQ, mouse_pos.x, mouse_pos.y, NULL);
+               nodes[num_nodes++] = create_branch(EQ, mouse_position.x, mouse_position.y, NULL);
                link = -1;
                mod_index = num_nodes - 1;
             }else if(here->type == NODE){
@@ -112,29 +111,25 @@ int main(void)
             if(link == 0){
                assert(num_nodes <= MAXGRAPHNODES);
 
-               mouse_pos = GetMousePosition();
-               nodes[num_nodes++] = create_node("Mouse", mouse_pos.x, mouse_pos.y);
+               nodes[num_nodes++] = create_node("Mouse", mouse_position.x, mouse_position.y);
                mod_index = num_nodes - 1;
                link = 1;
             }else if(link > 0){
-               mouse_pos = GetMousePosition();
-               link_node = get_node_at(nodes, num_nodes, mouse_pos.x, mouse_pos.y);
+               link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
 
                if(link_node != NULL){
                   set_node_link((NODE_FLOW *)nodes[mod_index], link_node);
                   link = 0;
                }
             }else{
-               mouse_pos = GetMousePosition();
-
                if(link == -1){
-                  link_node = get_node_at(nodes, num_nodes, mouse_pos.x, mouse_pos.y);
+                  link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
                   if(link_node != NULL){
                      link = -2;
                      ((BRANCH_FLOW *)nodes[mod_index])->yes = create_link_from(nodes[mod_index], link_node);
                   }
                }else if(link == -2){
-                  link_node = get_node_at(nodes, num_nodes, mouse_pos.x, mouse_pos.y);
+                  link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
                   if(link_node != NULL && link_node != ((BRANCH_FLOW *)nodes[mod_index])->yes.to){
                      ((BRANCH_FLOW *)nodes[mod_index])->no = create_link_from(nodes[mod_index], link_node);
                      link = 0;
