@@ -3,12 +3,42 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 #include "flow.h"
 #include "panel.h"
 #include "globals.h"
+#include "options.h"
 
 #define DEBUGF(fmt, ...) printf("[DEBUG]: " fmt, __VA_ARGS__)
 #define DEBUG(f) printf("[DEBUG]: " f "\n")
+
+#undef max
+#define max(a, b) (a) > (b) ? (a) : (b) 
+
+GEN_FLOW *nodes[MAXGRAPHNODES];
+int num_nodes = 0;
+int mod_index = 0;
+int focus = MAIN_FOCUS;
+
+void rmb_menu_option_selection(OPTION_MENU *menu){
+   focus = update_menu(menu);
+
+   if(focus == MENU_BUTTON_CLICKED){
+      switch(get_selected(menu)){
+         case 0: // create node_flow
+            mod_index = num_nodes;
+            nodes[num_nodes++] = create_node("Mouse", mouse_position.x, max(menu->y - 15, 0));
+            break;
+         case 1: // create branch_flow
+            mod_index = num_nodes;
+            nodes[num_nodes++] = create_branch(EQ, mouse_position.x,  max(menu->y - 15, 0), NULL);
+            break;
+         case -1:
+            break;
+      }
+      focus = menu->focus;
+   }
+}
 
 int main(void)
 {
@@ -20,10 +50,9 @@ int main(void)
    InitWindow(screenWidth, screenHeight, "Rubik's Cube Timer Application");
    SetTargetFPS(20);
 
-   GEN_FLOW *nodes[MAXGRAPHNODES];
-   int num_nodes = 0;
-   int mod_index = 0;
-   int focus = 0;
+   char *rmb_buttons[] = {"Create Node", "Create Branch"};
+   OPTION_MENU rmb_menu = create_menu(0, 0, 75, 150, "RMB", rmb_buttons, 2, RMB_MENU_FOCUS);
+
    int link = 0;
 
    init_panels();
@@ -55,16 +84,19 @@ int main(void)
    while (!WindowShouldClose())    // Detect window close button or ESC key
    {
       update_globals();
-
       if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)){
-         if(link == 0 && focus == 0){
+         if(focus == MAIN_FOCUS){
             assert(num_nodes <= MAXGRAPHNODES);
 
             GEN_FLOW *here = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
             if(here == NULL){ // there is no node at this location
-               nodes[num_nodes++] = create_branch(EQ, mouse_position.x, mouse_position.y, NULL);
-               link = -1;
-               mod_index = num_nodes - 1;
+               // nodes[num_nodes++] = create_branch(EQ, mouse_position.x, mouse_position.y, NULL);
+               // link = -1;
+               // mod_index = num_nodes - 1;
+               set_visible(&rmb_menu);
+               focus = RMB_MENU_FOCUS;
+               set_global_message("Right Click");
+            
             }else if(here->type == NODE){
                mod_index = uuid_to_index(here, nodes, num_nodes);
 
@@ -76,6 +108,7 @@ int main(void)
                }else{
                   link = 1;
                }
+               set_global_message("Link Node");
             }else{
                mod_index = uuid_to_index(here, nodes, num_nodes);
                if(((BRANCH_FLOW *)here)->yes.to == NULL){
@@ -97,35 +130,44 @@ int main(void)
                      link = -2;
                   }
                }
+               set_global_message("Link Branch");
             }
+         }else if(focus == RMB_MENU_FOCUS){
+            focus = MAIN_FOCUS; // TODO: If a window is open and rmb is pressed close the window 
+            set_invisible(&rmb_menu);
+            set_global_message("Main Window");
+         }else{
+            focus = MAIN_FOCUS;
+            set_global_message("Main Window");
          }
       }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-         if(link == 0){
-            focus = update_branch_panel(nodes, num_nodes);
-            if(focus == 0){
-               focus = update_node_panel(nodes, num_nodes);
+         if(link == 0 && focus == MAIN_FOCUS){
+            focus = update_branch_panel(nodes, &num_nodes);
+            if(focus == MAIN_FOCUS){
+               focus = update_node_panel(nodes, &num_nodes);
+               if(focus == MAIN_FOCUS){
+                  set_global_message("Main Window");
+               }else{
+                  set_global_message("Node Info");
+               }
+            }else{
+               set_global_message("Branch Info");
             }
          }
 
-         if(focus == 0){
-            if(link == 0){
-               assert(num_nodes <= MAXGRAPHNODES);
-
-               nodes[num_nodes++] = create_node("Mouse", mouse_position.x, mouse_position.y);
-               mod_index = num_nodes - 1;
-               link = 1;
-            }else if(link > 0){
+         if(focus == MAIN_FOCUS){
+            if(link > 0){
                link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
 
                if(link_node != NULL){
                   set_node_link((NODE_FLOW *)nodes[mod_index], link_node);
                   link = 0;
                }
-            }else{
+            }else if(link != 0){
                if(link == -1){
                   link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
                   if(link_node != NULL){
-                     link = -2;
+                     link = ((BRANCH_FLOW *)nodes[mod_index])->no.to == NULL ? -2 : 0; // Handle case where yes is true and no is false
                      ((BRANCH_FLOW *)nodes[mod_index])->yes = create_link_from(nodes[mod_index], link_node);
                   }
                }else if(link == -2){
@@ -136,22 +178,33 @@ int main(void)
                   }
                }
             }
+         }else if(focus == RMB_MENU_FOCUS){ //rmb menu open 
+            rmb_menu_option_selection(&rmb_menu);
+         }else{
+            focus = MAIN_FOCUS;
          }
       }
 
-      if(focus == -1) focus = 0;
+      if(focus == RESET_FOCUS){
+         focus = 0;
+      }
 
+      printf("focus:%d\n", focus);
       BeginDrawing();
          ClearBackground(RAYWHITE);
 
          draw_nodes(nodes, num_nodes);
 
+         DrawText(screen_message, 1200 - message_width, 17, 15, BLUE);
+         DrawRectangle(1200 - message_width, 0, message_width, 20, RAYWHITE);
+
          show_branch_flow();
          show_node_flow();
+         draw_menu(&rmb_menu);
       EndDrawing();
-
    }
 
+   delete_menu(&rmb_menu);
    free_graph(nodes, num_nodes);
    CloseWindow();
 

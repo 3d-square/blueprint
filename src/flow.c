@@ -112,7 +112,6 @@ FLOW_LINK _create_link_from(GEN_FLOW *from, GEN_FLOW *to){
    int midy = from->y;
 
    if(to->type == NODE) midy += text_height + 4;
-
    
    return (FLOW_LINK){from, to, to->x, midy};
 }
@@ -127,6 +126,7 @@ void draw_link(FLOW_LINK *link, Color color){
        endy   = link->to->y;
    
    if(link->from->type == NODE){
+      // printf("%s(%d, %d) -> %s(%d, %d)\n", link->from->uuid, startx, starty, link->to->uuid, endx, endy);
       starty += text_height + 4;
    }
 
@@ -208,8 +208,8 @@ void draw_node(GEN_FLOW *flow){
 
    draw_link(&node->next, BLACK);
 
+   DrawRectangle(node->x - (node->text_width)/2, node->y, node->width, node->height, WHITE);
    DrawText(node->value, node->x - node->text_width/2 + 2, node->y + 2, font_size, BLACK);
-
    DrawRectangleLines(node->x - (node->text_width)/2, node->y, node->width, node->height, BLACK);
 }
 

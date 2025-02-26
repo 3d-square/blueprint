@@ -19,6 +19,7 @@ struct branch_panel{
    BRANCH_FLOW *branch;
    BUTTON btn1;
    BUTTON btn2;
+   BUTTON delete;
 } branch_panel;
 
 struct node_panel{
@@ -28,6 +29,7 @@ struct node_panel{
    int focus;
    NODE_FLOW *node;
    BUTTON btn;
+   BUTTON delete;
 } node_panel;
 
 void init_panels(){
@@ -42,6 +44,7 @@ void init_panels(){
       .branch = NULL,
       .btn1 = create_button(0, 0, 15, 15, "X", 15),
       .btn2 = create_button(0, 0, 15, 15, "X", 15),
+      .delete = create_button(0, 0, 200, 25, "Delete Branch", 15)
    };
    node_panel = (struct node_panel){
       .width = 125,
@@ -51,6 +54,7 @@ void init_panels(){
       .link_midpoint = {0},
       .node = NULL,
       .btn = create_button(0, 0, 15, 15, "X", 15),
+      .delete = create_button(0, 0, 125, 25, "Delete Node", 15)
    };
 }
 
@@ -90,6 +94,7 @@ void show_branch_flow(){
 
    draw_button(&branch_panel.btn1);
    draw_button(&branch_panel.btn2);
+   draw_button(&branch_panel.delete);
 }
 
 void show_node_flow(){
@@ -112,18 +117,27 @@ void show_node_flow(){
       sprintf(buffer, "Set: %s", node_panel.node->next.to->uuid);
       DrawText(buffer, x + 25, y + 25, 15, WHITE);
    }
+
+   draw_button(&node_panel.btn);
+   draw_button(&node_panel.delete);
 }
 
-int update_branch_panel(GEN_FLOW *nodes[], int length){
+int update_branch_panel(GEN_FLOW *nodes[], int *length){
    if(branch_panel.branch != NULL){
       if(is_mouse_collision(branch_panel.branch->x, branch_panel.branch->y, branch_panel.width, branch_panel.height)){
-         // do more checks to see if point is in 
+         if(button_activate(&branch_panel.btn1, MOUSE_BUTTON_LEFT)){
+            branch_panel.branch->yes.to = NULL;
+         }else if(button_activate(&branch_panel.btn2, MOUSE_BUTTON_LEFT)){
+            branch_panel.branch->no.to = NULL;
+         }else if(button_activate(&branch_panel.delete, MOUSE_BUTTON_LEFT)){
+            printf("Delete node TODO\n");
+         }
       }else{
          branch_panel.branch = NULL;
-         return -1;
+         return RESET_FOCUS;
       }
    }else{
-      GEN_FLOW *node = get_node_at(nodes, length, mouse_position.x, mouse_position.y);
+      GEN_FLOW *node = get_node_at(nodes, *length, mouse_position.x, mouse_position.y);
       if(node != NULL && node->type == BRANCH){
          branch_panel.branch = (BRANCH_FLOW *)node;
 
@@ -133,28 +147,34 @@ int update_branch_panel(GEN_FLOW *nodes[], int length){
          title_width = MeasureText(title_str, 20);
          branch_panel.mpl1 = strlen(branch_panel.link_midpoint_1);
          branch_panel.mpl2 = strlen(branch_panel.link_midpoint_2);
-         branch_panel.btn1.x = node->x + 15;
+         branch_panel.btn1.x = node->x + 7;
          branch_panel.btn1.y = node->y + 25;
-         branch_panel.btn2.x = node->x + 115;
+         branch_panel.btn2.x = node->x + 107;
          branch_panel.btn2.y = node->y + 25;
+         branch_panel.delete.x = node->x;
+         branch_panel.delete.y = node->y + branch_panel.height - 25;
       }else{
-         return 0;
+         return MAIN_FOCUS;
       }
    }
    node_panel.node = NULL;
-   return 1;
+   return BRANCH_PANEL_FOCUS;
 }
 
-int update_node_panel(GEN_FLOW *nodes[], int length){
+int update_node_panel(GEN_FLOW *nodes[], int *length){
    if(node_panel.node!= NULL){
       if(is_mouse_collision(node_panel.node->x, node_panel.node->y, node_panel.width, node_panel.height)){
-         // do more checks to see if point is in 
+         if(button_activate(&node_panel.btn, MOUSE_BUTTON_LEFT)){
+            node_panel.node->next.to = NULL;
+         }else if(button_activate(&node_panel.delete, MOUSE_BUTTON_LEFT)){
+            printf("Delete node TODO\n");
+         }
       }else{
          node_panel.node = NULL;
-         return -1;
+         return RESET_FOCUS;
       }
    }else{
-      GEN_FLOW *node = get_node_at(nodes, length, mouse_position.x, mouse_position.y);
+      GEN_FLOW *node = get_node_at(nodes, *length, mouse_position.x, mouse_position.y);
       if(node != NULL && node->type == NODE){
          node_panel.node = (NODE_FLOW *)node;
 
@@ -162,12 +182,16 @@ int update_node_panel(GEN_FLOW *nodes[], int length){
          sprintf(title_str, "Node: %s", node->uuid);
          title_width = MeasureText(title_str, 20);
          node_panel.mpl = strlen(node_panel.link_midpoint);
+         node_panel.btn.x = node->x + 7;
+         node_panel.btn.y = node->y + 25;
+         node_panel.delete.x = node->x;
+         node_panel.delete.y = node->y + node_panel.height - 25;
       }else{
-         return 0;
+         return MAIN_FOCUS;
       }
    }
 
    branch_panel.branch = NULL;
 
-   return 2;
+   return NODE_PANEL_FOCUS;
 }

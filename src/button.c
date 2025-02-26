@@ -19,7 +19,7 @@ BUTTON create_button(int x, int y, int w, int h, char *text, int text_size){
 }
 
 void draw_button(BUTTON *button){
-   Color color = button_collision(button) ? LIGHTGRAY : GRAY;
+   Color color = button_collision(button) ? LIGHTGRAY : DARKGRAY;
 
    DrawRectangle(button->x, button->y, button->width, button->height, color);
    DrawRectangleLines(button->x, button->y, button->width, button->height, BLACK);

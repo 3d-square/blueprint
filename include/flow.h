@@ -102,6 +102,8 @@ void set_branch_links(BRANCH_FLOW *branch, GEN_FLOW *yes, GEN_FLOW *no);
 GEN_FLOW *create_node(char *value, int x, int y);
 void set_node_link(NODE_FLOW *node, GEN_FLOW *next);
 
+void remove_node(GEN_FLOW *removed, GEN_FLOW *nodes[], int lenght);
+
 GEN_FLOW *get_node_at(GEN_FLOW *nodes[], int num_nodes, int x, int y);
 
 FLOW_LINK *execute_branch(BRANCH_FLOW *branch);
