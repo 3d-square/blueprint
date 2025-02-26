@@ -44,9 +44,6 @@ int main(void)
 {
    // Initialization
    //--------------------------------------------------------------------------------------
-   const int screenWidth = 1200;
-   const int screenHeight = 800;
-
    InitWindow(screenWidth, screenHeight, "Rubik's Cube Timer Application");
    SetTargetFPS(20);
 
@@ -135,10 +132,8 @@ int main(void)
          }else if(focus == RMB_MENU_FOCUS){
             focus = MAIN_FOCUS; // TODO: If a window is open and rmb is pressed close the window 
             set_invisible(&rmb_menu);
-            set_global_message("Main Window");
          }else{
             focus = MAIN_FOCUS;
-            set_global_message("Main Window");
          }
       }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
          if(link == 0 && focus == MAIN_FOCUS){
@@ -146,11 +141,11 @@ int main(void)
             if(focus == MAIN_FOCUS){
                focus = update_node_panel(nodes, &num_nodes);
                if(focus == MAIN_FOCUS){
-                  set_global_message("Main Window");
-               }else{
+
+               }else if(focus != RESET_FOCUS){
                   set_global_message("Node Info");
                }
-            }else{
+            }else if(focus != RESET_FOCUS){
                set_global_message("Branch Info");
             }
          }
@@ -189,14 +184,15 @@ int main(void)
          focus = 0;
       }
 
-      printf("focus:%d\n", focus);
+      // printf("focus:%d\n", focus);
       BeginDrawing();
          ClearBackground(RAYWHITE);
 
          draw_nodes(nodes, num_nodes);
 
-         DrawText(screen_message, 1200 - message_width, 17, 15, BLUE);
-         DrawRectangle(1200 - message_width, 0, message_width, 20, RAYWHITE);
+         DrawRectangle(screenWidth - message_width, 0, message_width, 50, DARKGRAY);
+         DrawRectangleLines(screenWidth - (message_width), 0, message_width, 50, BLACK);
+         DrawText(screen_message, screenWidth - message_width + 50, 17, 20, RED);
 
          show_branch_flow();
          show_node_flow();

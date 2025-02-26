@@ -12,6 +12,8 @@
 extern Vector2 mouse_position;
 extern char screen_message[64];
 extern int message_width;
+extern const int screenHeight;
+extern const int screenWidth;
 
 void set_global_message(char *msg);
 void update_globals(void);

@@ -95,6 +95,7 @@ FLOW_LINK _create_link_from(GEN_FLOW *from, GEN_FLOW *to);
 void free_graph(GEN_FLOW *nodes[], int num_nodes);
 void delete_node(NODE_FLOW *node);
 void delete_branch(BRANCH_FLOW *branch);
+void delete_flow(GEN_FLOW *flow);
 
 GEN_FLOW *create_branch(BRANCH_TYPE btype, int x, int y, int (*cmp)(BYTES, BYTES));
 void set_branch_links(BRANCH_FLOW *branch, GEN_FLOW *yes, GEN_FLOW *no);
@@ -102,7 +103,7 @@ void set_branch_links(BRANCH_FLOW *branch, GEN_FLOW *yes, GEN_FLOW *no);
 GEN_FLOW *create_node(char *value, int x, int y);
 void set_node_link(NODE_FLOW *node, GEN_FLOW *next);
 
-void remove_node(GEN_FLOW *removed, GEN_FLOW *nodes[], int lenght);
+void remove_node(GEN_FLOW *removed, GEN_FLOW *nodes[], int length);
 
 GEN_FLOW *get_node_at(GEN_FLOW *nodes[], int num_nodes, int x, int y);
 

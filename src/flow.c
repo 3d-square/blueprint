@@ -93,11 +93,47 @@ void free_graph(GEN_FLOW *nodes[], int num_nodes){
       }
    }
 }
+
+void delete_flow(GEN_FLOW *flow){
+   if(flow->type == BRANCH) delete_branch((BRANCH_FLOW *)flow);
+   else delete_node((NODE_FLOW *)flow);
+}
+
 void delete_node(NODE_FLOW *node){
    free(node);
 }
 void delete_branch(BRANCH_FLOW *branch){
    free(branch);
+}
+
+void remove_node(GEN_FLOW *removed, GEN_FLOW *nodes[], int length){
+   int index = uuid_to_index(removed, nodes, length);
+   if(index == -1){
+      set_global_message("Failed to remove node");
+      return;
+   }
+
+   // Unlink all nodes that link to the the removed node
+   for(int i = 0; i < length; ++i){
+      if(nodes[i]->type == BRANCH){
+         BRANCH_FLOW *branch = (BRANCH_FLOW *)nodes[i];
+         if(branch->yes.to == removed){
+            branch->yes.to = NULL;
+         }
+         if(branch->no.to == removed){
+            branch->no.to = NULL;
+         }
+      }else if(nodes[i]->type == NODE){
+         NODE_FLOW *node = (NODE_FLOW *)nodes[i];
+         if(node->next.to == removed){
+            node->next.to = NULL;
+         }
+      }
+   }
+
+   delete_flow(removed);
+
+   remove_index(nodes, length, index);
 }
 
 void set_node_link(NODE_FLOW *node, GEN_FLOW *next){
