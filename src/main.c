@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <math.h>
 #include "flow.h"
+#include "cutils.h"
 #include "panel.h"
 #include "globals.h"
 #include "options.h"
@@ -91,8 +92,8 @@ int main(void)
                // link = -1;
                // mod_index = num_nodes - 1;
                set_visible(&rmb_menu);
-               focus = RMB_MENU_FOCUS;
                set_global_message("Right Click");
+               link = 0;
             
             }else if(here->type == NODE){
                mod_index = uuid_to_index(here, nodes, num_nodes);
@@ -129,28 +130,27 @@ int main(void)
                }
                set_global_message("Link Branch");
             }
-         }else if(focus == RMB_MENU_FOCUS){
+         }else if(rmb_menu.visible && !is_mouse_collision(rmb_menu.x, rmb_menu.y, rmb_menu.width, rmb_menu.height)){
             focus = MAIN_FOCUS; // TODO: If a window is open and rmb is pressed close the window 
             set_invisible(&rmb_menu);
          }else{
             focus = MAIN_FOCUS;
          }
       }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-         if(link == 0 && focus == MAIN_FOCUS){
+         if(link == 0){
             focus = update_branch_panel(nodes, &num_nodes);
             if(focus == MAIN_FOCUS){
                focus = update_node_panel(nodes, &num_nodes);
-               if(focus == MAIN_FOCUS){
-
-               }else if(focus != RESET_FOCUS){
+               if(focus == NODE_PANEL_FOCUS){
                   set_global_message("Node Info");
                }
-            }else if(focus != RESET_FOCUS){
+            }else if(focus == BRANCH_PANEL_FOCUS){
                set_global_message("Branch Info");
             }
          }
 
          if(focus == MAIN_FOCUS){
+            printf("here1\n");
             if(link > 0){
                link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
 
@@ -172,9 +172,14 @@ int main(void)
                      link = 0;
                   }
                }
+            }else if(rmb_menu.visible){
+               if(is_mouse_collision(rmb_menu.x, rmb_menu.y, rmb_menu.width, rmb_menu.height)){
+                  rmb_menu_option_selection(&rmb_menu);
+               }else{
+                  focus = MAIN_FOCUS; // TODO: If a window is open and rmb is pressed close the window 
+                  set_invisible(&rmb_menu);
+               }
             }
-         }else if(focus == RMB_MENU_FOCUS){ //rmb menu open 
-            rmb_menu_option_selection(&rmb_menu);
          }else{
             focus = MAIN_FOCUS;
          }

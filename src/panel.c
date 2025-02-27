@@ -132,21 +132,16 @@ void show_node_flow(){
 }
 
 int update_branch_panel(GEN_FLOW *nodes[], int *length){
-   if(branch_panel.branch != NULL){
-      if(is_mouse_collision(branch_panel.x, branch_panel.y, branch_panel.width, branch_panel.height)){
-         if(button_activate(&branch_panel.btn1, MOUSE_BUTTON_LEFT)){
-            branch_panel.branch->yes.to = NULL;
-         }else if(button_activate(&branch_panel.btn2, MOUSE_BUTTON_LEFT)){
-            branch_panel.branch->no.to = NULL;
-         }else if(button_activate(&branch_panel.delete, MOUSE_BUTTON_LEFT)){
-            remove_node((GEN_FLOW *)branch_panel.branch, nodes, *length); 
-            *length = *length - 1;
-            branch_panel.branch = NULL;
-            set_global_message("Branch Deleted");
-         }
-      }else{
+   if(is_mouse_collision(branch_panel.x, branch_panel.y, branch_panel.width, branch_panel.height) && branch_panel.focus == 1){
+      if(button_activate(&branch_panel.btn1, MOUSE_BUTTON_LEFT)){
+         branch_panel.branch->yes.to = NULL;
+      }else if(button_activate(&branch_panel.btn2, MOUSE_BUTTON_LEFT)){
+         branch_panel.branch->no.to = NULL;
+      }else if(button_activate(&branch_panel.delete, MOUSE_BUTTON_LEFT)){
+         remove_node((GEN_FLOW *)branch_panel.branch, nodes, *length); 
+         *length = *length - 1;
          branch_panel.branch = NULL;
-         return RESET_FOCUS;
+         set_global_message("Branch Deleted");
       }
    }else{
       GEN_FLOW *node = get_node_at(nodes, *length, mouse_position.x, mouse_position.y);
@@ -159,12 +154,9 @@ int update_branch_panel(GEN_FLOW *nodes[], int *length){
          title_width = MeasureText(title_str, 20);
          branch_panel.mpl1 = strlen(branch_panel.link_midpoint_1);
          branch_panel.mpl2 = strlen(branch_panel.link_midpoint_2);
-         // branch_panel.btn1.x = node->x + 7;
-         // branch_panel.btn1.y = node->y + 25;
-         // branch_panel.btn2.x = node->x + 107;
-         // branch_panel.btn2.y = node->y + 25;
-         // branch_panel.delete.x = node->x;
-         // branch_panel.delete.y = node->y + branch_panel.height - 25;
+
+         branch_panel.focus = 1;
+         node_panel.focus = 0;
       }else{
          return MAIN_FOCUS;
       }
@@ -174,19 +166,14 @@ int update_branch_panel(GEN_FLOW *nodes[], int *length){
 }
 
 int update_node_panel(GEN_FLOW *nodes[], int *length){
-   if(node_panel.node!= NULL){
-      if(is_mouse_collision(node_panel.x, node_panel.y, node_panel.width, node_panel.height)){
-         if(button_activate(&node_panel.btn, MOUSE_BUTTON_LEFT)){
-            node_panel.node->next.to = NULL;
-         }else if(button_activate(&node_panel.delete, MOUSE_BUTTON_LEFT)){
-            remove_node((GEN_FLOW *)node_panel.node, nodes, *length); 
-            *length = *length - 1;
-            node_panel.node = NULL;
-            set_global_message("Node Deleted");
-         }
-      }else{
+   if(is_mouse_collision(node_panel.x, node_panel.y, node_panel.width, node_panel.height) && node_panel.focus == 1){
+      if(button_activate(&node_panel.btn, MOUSE_BUTTON_LEFT)){
+         node_panel.node->next.to = NULL;
+      }else if(button_activate(&node_panel.delete, MOUSE_BUTTON_LEFT)){
+         remove_node((GEN_FLOW *)node_panel.node, nodes, *length); 
+         *length = *length - 1;
          node_panel.node = NULL;
-         return RESET_FOCUS;
+         set_global_message("Node Deleted");
       }
    }else{
       GEN_FLOW *node = get_node_at(nodes, *length, mouse_position.x, mouse_position.y);
@@ -196,11 +183,9 @@ int update_node_panel(GEN_FLOW *nodes[], int *length){
          sprintf(node_panel.link_midpoint, "%d,%d", node_panel.node->next.midx, node_panel.node->next.midy);
          sprintf(title_str, "Node: %s", node->uuid);
          title_width = MeasureText(title_str, 20);
-         // node_panel.mpl = strlen(node_panel.link_midpoint);
-         // node_panel.btn.x = node->x + 7;
-         // node_panel.btn.y = node->y + 25;
-         // node_panel.delete.x = node->x;
-         // node_panel.delete.y = node->y + node_panel.height - 25;
+
+         branch_panel.focus = 0;
+         node_panel.focus = 1;
       }else{
          return MAIN_FOCUS;
       }
