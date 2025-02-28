@@ -82,75 +82,66 @@ int main(void)
    while (!WindowShouldClose())    // Detect window close button or ESC key
    {
       update_globals();
-      if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)){
+      if(link == 0){
+         focus = update_branch_panel(nodes, &num_nodes);
          if(focus == MAIN_FOCUS){
-            assert(num_nodes <= MAXGRAPHNODES);
+            focus = update_node_panel(nodes, &num_nodes);
+         }
+      }
 
-            GEN_FLOW *here = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
-            if(here == NULL){ // there is no node at this location
-               // nodes[num_nodes++] = create_branch(EQ, mouse_position.x, mouse_position.y, NULL);
-               // link = -1;
-               // mod_index = num_nodes - 1;
-               set_visible(&rmb_menu);
-               set_global_message("Right Click");
+      if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)){
+         assert(num_nodes <= MAXGRAPHNODES);
+
+         GEN_FLOW *here = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
+         if(here == NULL){ // there is no node at this location
+            // nodes[num_nodes++] = create_branch(EQ, mouse_position.x, mouse_position.y, NULL);
+            // link = -1;
+            // mod_index = num_nodes - 1;
+            set_visible(&rmb_menu);
+            set_global_message("Right Click");
+            link = 0;
+         
+         }else if(here->type == NODE){
+            mod_index = uuid_to_index(here, nodes, num_nodes);
+
+            if(mod_index == -1){
+               // do some error handling
+               // maybe reset state
+               //
                link = 0;
-            
-            }else if(here->type == NODE){
-               mod_index = uuid_to_index(here, nodes, num_nodes);
-
+            }else{
+               link = 1;
+            }
+            set_global_message("Link Node");
+         }else{
+            mod_index = uuid_to_index(here, nodes, num_nodes);
+            if(((BRANCH_FLOW *)here)->yes.to == NULL){
                if(mod_index == -1){
                   // do some error handling
                   // maybe reset state
                   //
                   link = 0;
                }else{
-                  link = 1;
+                  link = -1;
+               }              
+            }else if(((BRANCH_FLOW *)here)->no.to == NULL){
+               if(mod_index == -1){
+                  // do some error handling
+                  // maybe reset state
+                  //
+                  link = 0;
+               }else{
+                  link = -2;
                }
-               set_global_message("Link Node");
-            }else{
-               mod_index = uuid_to_index(here, nodes, num_nodes);
-               if(((BRANCH_FLOW *)here)->yes.to == NULL){
-                  if(mod_index == -1){
-                     // do some error handling
-                     // maybe reset state
-                     //
-                     link = 0;
-                  }else{
-                     link = -1;
-                  }              
-               }else if(((BRANCH_FLOW *)here)->no.to == NULL){
-                  if(mod_index == -1){
-                     // do some error handling
-                     // maybe reset state
-                     //
-                     link = 0;
-                  }else{
-                     link = -2;
-                  }
-               }
-               set_global_message("Link Branch");
             }
-         }else if(rmb_menu.visible && !is_mouse_collision(rmb_menu.x, rmb_menu.y, rmb_menu.width, rmb_menu.height)){
-            focus = MAIN_FOCUS; // TODO: If a window is open and rmb is pressed close the window 
-            set_invisible(&rmb_menu);
-         }else{
-            focus = MAIN_FOCUS;
-         }
-      }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-         if(link == 0){
-            focus = update_branch_panel(nodes, &num_nodes);
-            if(focus == MAIN_FOCUS){
-               focus = update_node_panel(nodes, &num_nodes);
-               if(focus == NODE_PANEL_FOCUS){
-                  set_global_message("Node Info");
-               }
-            }else if(focus == BRANCH_PANEL_FOCUS){
-               set_global_message("Branch Info");
-            }
+            set_global_message("Link Branch");
          }
 
+         if(rmb_menu.visible && !is_mouse_collision(rmb_menu.x, rmb_menu.y, rmb_menu.width, rmb_menu.height)){
+            set_invisible(&rmb_menu);
+         }
+      }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
          if(focus == MAIN_FOCUS){
-            printf("here1\n");
             if(link > 0){
                link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
 
@@ -197,7 +188,7 @@ int main(void)
 
          DrawRectangle(screenWidth - message_width, 0, message_width, 50, DARKGRAY);
          DrawRectangleLines(screenWidth - (message_width), 0, message_width, 50, BLACK);
-         DrawText(screen_message, screenWidth - message_width + 50, 17, 20, RED);
+         DrawText(screen_message, screenWidth - message_width + 10, 17, 15, RED);
 
          show_branch_flow();
          show_node_flow();
