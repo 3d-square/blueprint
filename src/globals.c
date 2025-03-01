@@ -11,6 +11,8 @@ int message_width = 200;
 const int screenWidth = 1200;
 const int screenHeight = 800;
 
+int global_status = 0;
+
 void update_globals(void){
    mouse_position = GetMousePosition();
 

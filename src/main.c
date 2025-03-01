@@ -19,12 +19,13 @@
 GEN_FLOW *nodes[MAXGRAPHNODES];
 int num_nodes = 0;
 int mod_index = 0;
-int focus = MAIN_FOCUS;
+char file_name[64] = "model.dat";
+
+void save_model(GEN_FLOW *flow[], int length);
+GEN_FLOW **load_model(int *length);
 
 void rmb_menu_option_selection(OPTION_MENU *menu){
-   focus = update_menu(menu);
-
-   if(focus == MENU_BUTTON_CLICKED){
+   if(update_menu(menu)){
       switch(get_selected(menu)){
          case 0: // create node_flow
             mod_index = num_nodes;
@@ -37,7 +38,6 @@ void rmb_menu_option_selection(OPTION_MENU *menu){
          case -1:
             break;
       }
-      focus = menu->focus;
    }
 }
 
@@ -49,7 +49,7 @@ int main(void)
    SetTargetFPS(20);
 
    char *rmb_buttons[] = {"Create Node", "Create Branch"};
-   OPTION_MENU rmb_menu = create_menu(0, 0, 75, 150, "RMB", rmb_buttons, 2, RMB_MENU_FOCUS);
+   OPTION_MENU rmb_menu = create_menu(0, 0, 75, 150, "RMB", rmb_buttons, 2);
 
    int link = 0;
 
@@ -82,11 +82,9 @@ int main(void)
    while (!WindowShouldClose())    // Detect window close button or ESC key
    {
       update_globals();
+
       if(link == 0){
-         focus = update_branch_panel(nodes, &num_nodes);
-         if(focus == MAIN_FOCUS){
-            focus = update_node_panel(nodes, &num_nodes);
-         }
+         update_panel(nodes, &num_nodes);
       }
 
       if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)){
@@ -105,14 +103,12 @@ int main(void)
             mod_index = uuid_to_index(here, nodes, num_nodes);
 
             if(mod_index == -1){
-               // do some error handling
-               // maybe reset state
-               //
                link = 0;
             }else{
                link = 1;
             }
             set_global_message("Link Node");
+            global_status = 1;
          }else{
             mod_index = uuid_to_index(here, nodes, num_nodes);
             if(((BRANCH_FLOW *)here)->yes.to == NULL){
@@ -135,49 +131,51 @@ int main(void)
                }
             }
             set_global_message("Link Branch");
+            global_status = 1;
          }
 
          if(rmb_menu.visible && !is_mouse_collision(rmb_menu.x, rmb_menu.y, rmb_menu.width, rmb_menu.height)){
             set_invisible(&rmb_menu);
          }
       }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-         if(focus == MAIN_FOCUS){
-            if(link > 0){
-               link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
+         if(link > 0){
+            link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
 
+            if(link_node != NULL){
+               set_node_link((NODE_FLOW *)nodes[mod_index], link_node);
+            }else{
+               set_global_message("No Node Found");
+            }
+            link = 0;
+            global_status = 0;
+         }else if(link != 0){
+            DISPLAY_MOUSE_POSITION();
+            if(link == -1){
+               link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
                if(link_node != NULL){
-                  set_node_link((NODE_FLOW *)nodes[mod_index], link_node);
+                  link = ((BRANCH_FLOW *)nodes[mod_index])->no.to == NULL ? -2 : 0; // Handle case where yes is true and no is false
+                  ((BRANCH_FLOW *)nodes[mod_index])->yes = create_link_from(nodes[mod_index], link_node);
+               }else{
+                  set_global_message("No Node Found");
                   link = 0;
                }
-            }else if(link != 0){
-               if(link == -1){
-                  link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
-                  if(link_node != NULL){
-                     link = ((BRANCH_FLOW *)nodes[mod_index])->no.to == NULL ? -2 : 0; // Handle case where yes is true and no is false
-                     ((BRANCH_FLOW *)nodes[mod_index])->yes = create_link_from(nodes[mod_index], link_node);
-                  }
-               }else if(link == -2){
-                  link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
-                  if(link_node != NULL && link_node != ((BRANCH_FLOW *)nodes[mod_index])->yes.to){
-                     ((BRANCH_FLOW *)nodes[mod_index])->no = create_link_from(nodes[mod_index], link_node);
-                     link = 0;
-                  }
-               }
-            }else if(rmb_menu.visible){
-               if(is_mouse_collision(rmb_menu.x, rmb_menu.y, rmb_menu.width, rmb_menu.height)){
-                  rmb_menu_option_selection(&rmb_menu);
+            }else if(link == -2){
+               link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
+               if(link_node != NULL && link_node != ((BRANCH_FLOW *)nodes[mod_index])->yes.to){
+                  ((BRANCH_FLOW *)nodes[mod_index])->no = create_link_from(nodes[mod_index], link_node);
                }else{
-                  focus = MAIN_FOCUS; // TODO: If a window is open and rmb is pressed close the window 
-                  set_invisible(&rmb_menu);
+                  set_global_message("No Node Found");
                }
+               link = 0;
             }
-         }else{
-            focus = MAIN_FOCUS;
+            global_status = 0;
+         }else if(rmb_menu.visible){
+            if(is_mouse_collision(rmb_menu.x, rmb_menu.y, rmb_menu.width, rmb_menu.height)){
+               rmb_menu_option_selection(&rmb_menu);
+            }else{
+               set_invisible(&rmb_menu);
+            }
          }
-      }
-
-      if(focus == RESET_FOCUS){
-         focus = 0;
       }
 
       // printf("focus:%d\n", focus);
@@ -201,4 +199,66 @@ int main(void)
    CloseWindow();
 
    return 0;
+}
+
+void save_model(GEN_FLOW *flow[], int length){
+   FILE *fp = fopen(file_name, "wb");
+   if(fp == NULL){
+      set_global_message("Unable to open file");
+
+      return;
+   }
+
+   fwrite(&length, sizeof(int), 1, fp);
+   for(int i = 0; i < length; ++i){
+      fwrite(flow[i], sizeof(GEN_FLOW), 1, fp);
+      if(flow[i]->type == NODE){
+         BRANCH_FLOW *branch = (BRANCH_FLOW *)flow[i];
+         fwrite(&branch->btype, sizeof(BRANCH_TYPE), 1, fp);
+
+         if(branch->yes.to){
+            fwrite(branch->yes.to->uuid, sizeof(char[16]), 1, fp);
+            fwrite(&branch->yes.midx, sizeof(int), 1, fp);
+            fwrite(&branch->yes.midy, sizeof(int), 1, fp);
+         }
+
+         if(branch->no.to){
+            fwrite(branch->no.to->uuid, sizeof(char[16]), 1, fp);
+            fwrite(&branch->no.midx, sizeof(int), 1, fp);
+            fwrite(&branch->no.midy, sizeof(int), 1, fp);
+         }
+
+      }else if(flow[i]->type == BRANCH){
+         NODE_FLOW *node = (NODE_FLOW *)flow[i];
+         fwrite(&node->width, sizeof(int), 1, fp);
+         fwrite(&node->height, sizeof(int), 1, fp);
+         fwrite(&node->text_width, sizeof(int), 1, fp);
+         fwrite(node->value, sizeof(char), strlen(node->value), fp);
+
+         if(node->next.to){
+            fwrite(node->next.to->uuid, sizeof(char[16]), 1, fp);
+            fwrite(&node->next.midx, sizeof(int), 1, fp);
+            fwrite(&node->next.midy, sizeof(int), 1, fp);
+         }
+      }else{
+         fprintf(stderr, "Unable to save flow type\n");
+         exit(1);
+      }
+   }
+
+   fclose(fp);
+}
+
+GEN_FLOW **load_model(int *length){
+   FILE *fp = fopen(file_name, "wb");
+   if(fp == NULL){
+      set_global_message("Unable to open file");
+      *length = -1;
+
+      return NULL;
+   }
+   fread(length, sizeof(int), 1, fp);
+   
+
+   fclose(fp);
 }

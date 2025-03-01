@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, int num_buttons, int focus){
+OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, int num_buttons){
    size_t size = sizeof(BUTTON) * num_buttons;
    int button_height = GetFontDefault().baseSize + 4;
 
@@ -22,7 +22,6 @@ OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, 
       .selected = -1,
       .visible = 0,
       .close = create_button(0, 0, 15, 15, "X", 15),
-      .focus = focus,
    };  
    
    result.buttons = malloc(size);
@@ -82,7 +81,7 @@ int update_menu(OPTION_MENU *menu){
       set_global_message("Window Invisible");
       return -69;
    }
-   if(!is_mouse_collision(menu->x, menu->y ,menu->width ,menu->height)) return menu->focus;
+   if(!is_mouse_collision(menu->x, menu->y ,menu->width ,menu->height)) return 0;
 
    if(button_activate(&menu->close, MOUSE_BUTTON_LEFT)){
       set_invisible(menu);
@@ -92,11 +91,11 @@ int update_menu(OPTION_MENU *menu){
    for(int i = 0; i < menu->num_buttons; ++i){
       if(button_activate(&menu->buttons[i], MOUSE_BUTTON_LEFT)){
          menu->selected = i;
-         return MENU_BUTTON_CLICKED;
+         return 1;
       }
    }
    
-   return menu->focus;
+   return 0;
 }
 
 int get_selected(OPTION_MENU *menu){

@@ -11,10 +11,9 @@ typedef struct _options{
    int num_buttons;
    int selected;
    int visible;
-   int focus;
 } OPTION_MENU;
 
-OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, int num_buttons, int focus); 
+OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, int num_buttons); 
 void delete_menu(OPTION_MENU *menu);
 
 void set_visible(OPTION_MENU *menu);

@@ -51,8 +51,8 @@ void init_panels(){
       .link_midpoint_1 = {0},
       .link_midpoint_2 = {0},
       .branch = NULL,
-      .btn1 = create_button(x + 7, y_offset + 25, 15, 15, "X", 15),
-      .btn2 = create_button(x + 7, y_offset + 75, 15, 15, "X", 15),
+      .btn1 = create_button(x + 7, y_offset + 75, 15, 15, "X", 15),
+      .btn2 = create_button(x + 7, y_offset + 125, 15, 15, "X", 15),
       .delete = create_button(x, screenHeight - 25, 200, 25, "Delete Branch", 15)
    };
    node_panel = (struct node_panel){
@@ -64,7 +64,7 @@ void init_panels(){
       .focus = 0,
       .link_midpoint = {0},
       .node = NULL,
-      .btn = create_button(x + 7, y_offset + 25, 15, 15, "X", 15),
+      .btn = create_button(x + 7, y_offset + 75, 15, 15, "X", 15),
       .delete = create_button(x, screenHeight - 25, 200, 25, "Delete Node", 15)
    };
 
@@ -83,25 +83,28 @@ void show_branch_flow(){
 
    DrawRectangle(x, y, branch_panel.width, branch_panel.height, DARKGRAY);
    DrawRectangleLines(x, y, branch_panel.width, branch_panel.height, BLACK);
-   DrawRectangleLines(x + 13, y + 50, 100, text_height + 8, BLACK);
-   DrawRectangleLines(x + 13, y + 105, 100, text_height + 8, BLACK);
+   DrawRectangleLines(x + 13, y + 100, 100, text_height + 8, BLACK);
+   DrawRectangleLines(x + 13, y + 155, 100, text_height + 8, BLACK);
 
    DrawText(title_str, x + (branch_panel.width / 2) - (title_width / 2), y + 5, 20, WHITE);
-   DrawText(branch_panel.link_midpoint_1, x + 15, y + 55, 10, WHITE);
-   DrawText(branch_panel.link_midpoint_2, x + 15, y + 110, 10, WHITE);
+   DrawText(branch_panel.link_midpoint_1, x + 17, y + 105, 10, WHITE);
+   DrawText(branch_panel.link_midpoint_2, x + 17, y + 160, 10, WHITE);
+
+   sprintf(buffer, "(%d, %d)", branch_panel.branch->x, branch_panel.branch->y);
+   DrawText(buffer, x + 100 - MeasureText(buffer, 15)/2, y + 35, 15, WHITE);
 
    if(branch_panel.branch->yes.to == NULL){
-      DrawText("Not Set", x + 25, y + 25, 15, WHITE);
+      DrawText("Not Set", x + 25, y + 75, 15, WHITE);
    }else{
-      sprintf(buffer, "Set: %s", branch_panel.branch->yes.to->uuid);
-      DrawText(buffer, x + 25, y + 25, 15, WHITE);
+      sprintf(buffer, "Set: %s (%d, %d)", branch_panel.branch->yes.to->uuid, branch_panel.branch->yes.to->x, branch_panel.branch->yes.to->y);
+      DrawText(buffer, x + 25, y + 75, 15, WHITE);
    }
 
    if(branch_panel.branch->no.to == NULL){
-      DrawText("Not Set", x + 25, y + 75, 15, WHITE);
+      DrawText("Not Set", x + 25, y + 125, 15, WHITE);
    }else{
-      sprintf(buffer, "Set: %s", branch_panel.branch->no.to->uuid);
-      DrawText(buffer, x + 25, y + 75, 15, WHITE);
+      sprintf(buffer, "Set: %s (%d, %d)", branch_panel.branch->no.to->uuid, branch_panel.branch->no.to->x, branch_panel.branch->no.to->y);
+      DrawText(buffer, x + 25, y + 125, 15, WHITE);
    }
 
    draw_button(&branch_panel.btn1);
@@ -118,16 +121,19 @@ void show_node_flow(){
 
    DrawRectangle(x, y, node_panel.width, node_panel.height, DARKGRAY);
    DrawRectangleLines(x, y, node_panel.width, node_panel.height, BLACK);
-   DrawRectangleLines(x + 13, y + 50, 100, text_height + 8, BLACK);
+   DrawRectangleLines(x + 13, y + 100, 100, text_height + 8, BLACK);
 
    DrawText(title_str, x + (node_panel.width / 2) - (title_width / 2), y + 5, 20, WHITE);
-   DrawText(node_panel.link_midpoint, x + 15, y + 55, 10, WHITE);
+   DrawText(node_panel.link_midpoint, x + 17, y + 105, 10, WHITE);
+
+   sprintf(buffer, "(%d, %d)", node_panel.node->x, node_panel.node->y);
+   DrawText(buffer, x + 100 - MeasureText(buffer, 15)/2, y + 35, 15, WHITE);
 
    if(node_panel.node->next.to == NULL){
-      DrawText("Not Set", x + 25, y + 25, 15, WHITE);
+      DrawText("Not Set", x + 25, y + 75, 15, WHITE);
    }else{
-      sprintf(buffer, "Set: %s", node_panel.node->next.to->uuid);
-      DrawText(buffer, x + 25, y + 25, 15, WHITE);
+      sprintf(buffer, "Set: %s (%d, %d)", node_panel.node->next.to->uuid, node_panel.node->next.to->x, node_panel.node->next.to->y);
+      DrawText(buffer, x + 25, y + 75, 15, WHITE);
    }
 
    draw_button(&node_panel.btn);
@@ -145,7 +151,49 @@ void do_coordinate_enter(char *text, int *x_o, int *y_o){
    }
 }
 
+void update_panel(GEN_FLOW *nodes[], int *length){
+   if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
+      GEN_FLOW *node = get_node_at(nodes, *length, mouse_position.x, mouse_position.y);
+      if(node != NULL){
+         if(node->type == BRANCH){
+            branch_panel.branch = (BRANCH_FLOW *)node;
+
+            sprintf(branch_panel.link_midpoint_1, "%d,%d", branch_panel.branch->yes.midx, branch_panel.branch->yes.midy);
+            sprintf(branch_panel.link_midpoint_2, "%d,%d", branch_panel.branch->no.midx, branch_panel.branch->no.midy);
+            sprintf(title_str, "Branch Node: %s", node->uuid);
+            title_width = MeasureText(title_str, 20);
+            branch_panel.mpl1 = strlen(branch_panel.link_midpoint_1);
+            branch_panel.mpl2 = strlen(branch_panel.link_midpoint_2);
+
+            branch_panel.focus = 1;
+            node_panel.focus = 0;
+            node_panel.node = NULL;
+            set_global_message("Branch Info");
+         }else if(node->type == NODE){
+            node_panel.node = (NODE_FLOW *)node;
+
+            sprintf(node_panel.link_midpoint, "%d,%d", node_panel.node->next.midx, node_panel.node->next.midy);
+            sprintf(title_str, "Node: %s", node->uuid);
+            title_width = MeasureText(title_str, 20);
+
+            branch_panel.focus = 0;
+            node_panel.focus = 1;
+            branch_panel.branch = NULL;
+            set_global_message("Node Info");
+         }
+      }
+   }
+
+   if(branch_panel.focus == 1){
+      update_branch_panel(nodes, length);
+   }else if(node_panel.focus == 1){
+      update_node_panel(nodes, length);
+   }
+}
+
 int update_branch_panel(GEN_FLOW *nodes[], int *length){
+   if(branch_panel.focus == 0) return MAIN_FOCUS;
+
    if(is_mouse_collision(branch_panel.x, branch_panel.y, branch_panel.width, branch_panel.height) && branch_panel.focus == 1){
       if(button_activate(&branch_panel.btn1, MOUSE_BUTTON_LEFT)){
          branch_panel.branch->yes.to = NULL;
@@ -156,37 +204,21 @@ int update_branch_panel(GEN_FLOW *nodes[], int *length){
          *length = *length - 1;
          branch_panel.branch = NULL;
          set_global_message("Branch Deleted");
-      }else if(is_mouse_collision(branch_panel.x + 13, branch_panel.y + 50, 100, text_height + 8)){
+      }else if(is_mouse_collision(branch_panel.x + 13, branch_panel.y + 100, 100, text_height + 8)){
          update_text_box(branch_panel.link_midpoint_1, 9);
          do_coordinate_enter(branch_panel.link_midpoint_1, &branch_panel.branch->yes.midx, &branch_panel.branch->yes.midy);
-      }else if(is_mouse_collision(node_panel.x + 13, node_panel.y + 105, 100, text_height + 8)){
+      }else if(is_mouse_collision(node_panel.x + 13, node_panel.y + 155, 100, text_height + 8)){
          update_text_box(branch_panel.link_midpoint_2, 9);
          do_coordinate_enter(branch_panel.link_midpoint_2, &branch_panel.branch->no.midx, &branch_panel.branch->no.midy);
       }
       return BRANCH_PANEL_FOCUS;
-   }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-      GEN_FLOW *node = get_node_at(nodes, *length, mouse_position.x, mouse_position.y);
-      if(node != NULL && node->type == BRANCH){
-         branch_panel.branch = (BRANCH_FLOW *)node;
-
-         sprintf(branch_panel.link_midpoint_1, "%d,%d", branch_panel.branch->yes.midx, branch_panel.branch->yes.midy);
-         sprintf(branch_panel.link_midpoint_2, "%d,%d", branch_panel.branch->no.midx, branch_panel.branch->no.midy);
-         sprintf(title_str, "Branch Node: %s", node->uuid);
-         title_width = MeasureText(title_str, 20);
-         branch_panel.mpl1 = strlen(branch_panel.link_midpoint_1);
-         branch_panel.mpl2 = strlen(branch_panel.link_midpoint_2);
-
-         branch_panel.focus = 1;
-         node_panel.focus = 0;
-         node_panel.node = NULL;
-         set_global_message("Branch Info");
-         return BRANCH_PANEL_FOCUS;
-      }
    }
    return MAIN_FOCUS;
 }
 
 int update_node_panel(GEN_FLOW *nodes[], int *length){
+   if(node_panel.focus == 0) return MAIN_FOCUS;
+
    if(is_mouse_collision(node_panel.x, node_panel.y, node_panel.width, node_panel.height) && node_panel.focus == 1){
       if(button_activate(&node_panel.btn, MOUSE_BUTTON_LEFT)){
          node_panel.node->next.to = NULL;
@@ -195,26 +227,11 @@ int update_node_panel(GEN_FLOW *nodes[], int *length){
          *length = *length - 1;
          node_panel.node = NULL;
          set_global_message("Node Deleted");
-      }else if(is_mouse_collision(node_panel.x + 13, node_panel.y + 50, 100, text_height + 8)){
+      }else if(is_mouse_collision(node_panel.x + 13, node_panel.y + 100, 100, text_height + 8)){
          update_text_box(node_panel.link_midpoint, 9);
          do_coordinate_enter(node_panel.link_midpoint, &node_panel.node->next.midx, &node_panel.node->next.midy);
       }
       return NODE_PANEL_FOCUS;
-   }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-      GEN_FLOW *node = get_node_at(nodes, *length, mouse_position.x, mouse_position.y);
-      if(node != NULL && node->type == NODE){
-         node_panel.node = (NODE_FLOW *)node;
-
-         sprintf(node_panel.link_midpoint, "%d,%d", node_panel.node->next.midx, node_panel.node->next.midy);
-         sprintf(title_str, "Node: %s", node->uuid);
-         title_width = MeasureText(title_str, 20);
-
-         branch_panel.focus = 0;
-         node_panel.focus = 1;
-         branch_panel.branch = NULL;
-         set_global_message("Node Info");
-         return NODE_PANEL_FOCUS;
-      }
    }
 
    return MAIN_FOCUS;
