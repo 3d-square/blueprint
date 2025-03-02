@@ -6,15 +6,13 @@
 #include <math.h>
 #include "flow.h"
 #include "cutils.h"
+#include "prints.h"
 #include "panel.h"
 #include "globals.h"
 #include "options.h"
 
 #define DEBUGF(fmt, ...) printf("[DEBUG]: " fmt, __VA_ARGS__)
 #define DEBUG(f) printf("[DEBUG]: " f "\n")
-
-#undef max
-#define max(a, b) (a) > (b) ? (a) : (b) 
 
 GEN_FLOW *nodes[MAXGRAPHNODES];
 int num_nodes = 0;
@@ -52,26 +50,7 @@ int main(void)
 
    init_panels();
 
-   // BRANCH_FLOW top 0
-   nodes[num_nodes++] = create_branch(EQ, 150, 50);
-
-   // BRANCH_FLOW branch 1
-   nodes[num_nodes++] = create_branch(EQ, 350, 100);
-
-   // NODE_FLOW node1 2
-   nodes[num_nodes++] = create_node("Yes?", 250, 250);
-
-   // NODE_FLOW node2 3
-   nodes[num_nodes++] = create_node("NO?", 450, 250);
-
-   // NODE_FLOW midpoint 4
-   nodes[num_nodes++] = create_node("MID", 150, 125);
-
-   set_branch_links((BRANCH_FLOW *)nodes[0], nodes[1], nodes[3]);
-   set_branch_links((BRANCH_FLOW *)nodes[1], nodes[2], nodes[3]);
-
-   set_node_link((NODE_FLOW *)nodes[2], nodes[4]);
-   set_node_link((NODE_FLOW *)nodes[4], nodes[0]);
+   load_model(nodes, &num_nodes);
 
    GEN_FLOW *link_node;
 
@@ -199,6 +178,8 @@ int main(void)
          draw_menu(&rmb_menu);
       EndDrawing();
    }
+
+   save_model(nodes, num_nodes);
 
    delete_menu(&rmb_menu);
    free_graph(nodes, num_nodes);

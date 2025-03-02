@@ -17,6 +17,7 @@ extern int message_width;
 extern const int screenHeight;
 extern const int screenWidth;
 extern int global_status;
+extern int node_id;
 
 void set_global_message(char *msg);
 void update_globals(void);

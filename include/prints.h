@@ -22,8 +22,15 @@ typedef struct _node_info{
    char to_uuid[16];
 } NODE_INFO;
 
+typedef union _flow_info{
+   NODE_INFO node_info;
+   BRANCH_INFO branch_info;
+} FLOW_INFO;
+
 void branch_flow_info(BRANCH_FLOW *flow, BRANCH_INFO *info);
 void node_flow_info(NODE_FLOW *flow, NODE_INFO *info);
+void branch_from_info(BRANCH_INFO *info, BRANCH_FLOW *flow);
+void node_from_info(NODE_INFO *info, NODE_FLOW *flow);
 void link_from_uuid(GEN_FLOW *from, FLOW_LINK *link, char *uuid, int x, int y, GEN_FLOW *nodes[], int length);
 void save_model(GEN_FLOW *flow[], int length);
 void load_model(GEN_FLOW *flow[], int *length);

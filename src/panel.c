@@ -152,6 +152,7 @@ void do_coordinate_enter(char *text, int *x_o, int *y_o){
 }
 
 void reset_branch_panel(){
+   if(branch_panel.branch == NULL) return;
    sprintf(branch_panel.link_midpoint_1, "%d,%d", branch_panel.branch->yes.midx, branch_panel.branch->yes.midy);
    sprintf(branch_panel.link_midpoint_2, "%d,%d", branch_panel.branch->no.midx, branch_panel.branch->no.midy);
    sprintf(title_str, "Branch Node: %s", branch_panel.branch->uuid);
@@ -161,9 +162,10 @@ void reset_branch_panel(){
 }
 
 void reset_node_panel(){
+   if(node_panel.node == NULL) return;
    sprintf(node_panel.link_midpoint, "%d,%d", node_panel.node->next.midx, node_panel.node->next.midy);
    sprintf(title_str, "Node: %s", node_panel.node->uuid);
-  title_width = MeasureText(title_str, 20);
+   title_width = MeasureText(title_str, 20);
 }
 
 void update_panel(GEN_FLOW *nodes[], int *length){
