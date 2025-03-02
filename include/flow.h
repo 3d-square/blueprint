@@ -1,5 +1,7 @@
 #pragma once
 
+#include "raylib.h"
+
 #define FLOW_VARS()\
 FLOW type;\
 int x, y;\
@@ -61,7 +63,7 @@ typedef enum _branch_type{
 
 typedef struct _branch_flow{
    FLOW_VARS();
-   int (*cmp)(BYTES lhs, BYTES rhs);
+   /* int (*cmp)(BYTES lhs, BYTES rhs); */
    BRANCH_TYPE btype;
    BYTES lhs; // Usually changeable value
    BYTES rhs; // Usually constant value
@@ -73,7 +75,7 @@ typedef struct _node_flow{
    FLOW_VARS();
    int width, height;
    int text_width;
-   char *value;
+   char value[128];
    FLOW_LINK next;
 } NODE_FLOW;
 
@@ -85,7 +87,7 @@ void draw_node(GEN_FLOW *flow);
 void draw_graph(GEN_FLOW *graph);
 void draw_nodes(GEN_FLOW *nodes[], int num_nodes);
 void draw_directioned_arrow(int x, int y, int startx, int starty, int endx, int endy);
-int uuid_to_index(GEN_FLOW *node, GEN_FLOW *nodes[], int length);
+int uuid_to_index(char *uuid, GEN_FLOW *nodes[], int length);
 
 #define create_link_from(from, to) _create_link_from((GEN_FLOW *)(from), (GEN_FLOW *)(to))
 #define auto_link_from(from, to) _create_link_from((GEN_FLOW *)(from), (GEN_FLOW *)(to))
@@ -97,7 +99,7 @@ void delete_node(NODE_FLOW *node);
 void delete_branch(BRANCH_FLOW *branch);
 void delete_flow(GEN_FLOW *flow);
 
-GEN_FLOW *create_branch(BRANCH_TYPE btype, int x, int y, int (*cmp)(BYTES, BYTES));
+GEN_FLOW *create_branch(BRANCH_TYPE btype, int x, int y);
 void set_branch_links(BRANCH_FLOW *branch, GEN_FLOW *yes, GEN_FLOW *no);
 
 GEN_FLOW *create_node(char *value, int x, int y);

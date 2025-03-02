@@ -39,11 +39,10 @@ void set_branch_links(BRANCH_FLOW *branch, GEN_FLOW *yes, GEN_FLOW *no){
    else branch->no = empty_link();
 }
 
-GEN_FLOW *create_branch(BRANCH_TYPE btype, int x, int y, int (*cmp)(BYTES, BYTES)){
+GEN_FLOW *create_branch(BRANCH_TYPE btype, int x, int y){
    BRANCH_FLOW branch = {
       .type = BRANCH,
 	   .btype = btype,
-	   .cmp = cmp,
 	   .x = x,
 	   .y = y,
       .yes = {0},
@@ -70,12 +69,12 @@ GEN_FLOW *create_node(char *value, int x, int y){
       .type = NODE,
 	   .x = x,
 	   .y = y,
-	   .value = value,
       .next = {0},
       .width = text_width + 4,
       .height = text_height + 4,
       .text_width = text_width,
    };
+   strcpy(node.value, value);
    GEN_FLOW *result = calloc(1, sizeof(NODE_FLOW));
    assert(result);
    memcpy(result, &node, sizeof(NODE_FLOW));
@@ -107,7 +106,7 @@ void delete_branch(BRANCH_FLOW *branch){
 }
 
 void remove_node(GEN_FLOW *removed, GEN_FLOW *nodes[], int length){
-   int index = uuid_to_index(removed, nodes, length);
+   int index = uuid_to_index(removed->uuid, nodes, length);
    if(index == -1){
       set_global_message("Failed to remove node");
       return;
@@ -320,7 +319,7 @@ void draw_graph(GEN_FLOW *graph){
 }
 
 FLOW_LINK *execute_branch(BRANCH_FLOW *branch){
-    int cmp_val = branch->cmp(branch->lhs, branch->lhs);
+ /*   int cmp_val = branch->cmp(branch->lhs, branch->lhs);
     FLOW_LINK *result = &branch->yes;
     switch(branch->btype){
         case GT:{
@@ -340,7 +339,8 @@ FLOW_LINK *execute_branch(BRANCH_FLOW *branch){
         }break;
     }
 
-    return result;
+    return result; */
+   return NULL;
 }
 
 GEN_FLOW *get_node_at(GEN_FLOW *nodes[], int num_nodes, int x, int y){
@@ -382,9 +382,9 @@ int str_cmp(BYTES lhs, BYTES rhs){
 }
 
 
-int uuid_to_index(GEN_FLOW *node, GEN_FLOW *nodes[], int length){
+int uuid_to_index(char *uuid, GEN_FLOW *nodes[], int length){
    for(int i = 0; i < length; ++i){
-      if(strcmp(node->uuid, nodes[i]->uuid) == 0) return i;
+      if(strcmp(uuid, nodes[i]->uuid) == 0) return i;
    }
 
    return -1;

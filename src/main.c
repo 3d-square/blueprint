@@ -21,9 +21,6 @@ int num_nodes = 0;
 int mod_index = 0;
 char file_name[64] = "model.dat";
 
-void save_model(GEN_FLOW *flow[], int length);
-GEN_FLOW **load_model(int *length);
-
 void rmb_menu_option_selection(OPTION_MENU *menu){
    if(update_menu(menu)){
       switch(get_selected(menu)){
@@ -33,7 +30,7 @@ void rmb_menu_option_selection(OPTION_MENU *menu){
             break;
          case 1: // create branch_flow
             mod_index = num_nodes;
-            nodes[num_nodes++] = create_branch(EQ, mouse_position.x,  max(menu->y - 15, 0), NULL);
+            nodes[num_nodes++] = create_branch(EQ, mouse_position.x,  max(menu->y - 15, 0));
             break;
          case -1:
             break;
@@ -56,10 +53,10 @@ int main(void)
    init_panels();
 
    // BRANCH_FLOW top 0
-   nodes[num_nodes++] = create_branch(EQ, 150, 50, NULL);
+   nodes[num_nodes++] = create_branch(EQ, 150, 50);
 
    // BRANCH_FLOW branch 1
-   nodes[num_nodes++] = create_branch(EQ, 350, 100, int_cmp);
+   nodes[num_nodes++] = create_branch(EQ, 350, 100);
 
    // NODE_FLOW node1 2
    nodes[num_nodes++] = create_node("Yes?", 250, 250);
@@ -100,7 +97,7 @@ int main(void)
             link = 0;
          
          }else if(here->type == NODE){
-            mod_index = uuid_to_index(here, nodes, num_nodes);
+            mod_index = uuid_to_index(here->uuid, nodes, num_nodes);
 
             if(mod_index == -1){
                link = 0;
@@ -110,7 +107,7 @@ int main(void)
             set_global_message("Link Node");
             global_status = 1;
          }else{
-            mod_index = uuid_to_index(here, nodes, num_nodes);
+            mod_index = uuid_to_index(here->uuid, nodes, num_nodes);
             if(((BRANCH_FLOW *)here)->yes.to == NULL){
                if(mod_index == -1){
                   // do some error handling
@@ -143,6 +140,7 @@ int main(void)
 
             if(link_node != NULL){
                set_node_link((NODE_FLOW *)nodes[mod_index], link_node);
+                  reset_node_panel();
             }else{
                set_global_message("No Node Found");
             }
@@ -155,6 +153,8 @@ int main(void)
                if(link_node != NULL){
                   link = ((BRANCH_FLOW *)nodes[mod_index])->no.to == NULL ? -2 : 0; // Handle case where yes is true and no is false
                   ((BRANCH_FLOW *)nodes[mod_index])->yes = create_link_from(nodes[mod_index], link_node);
+
+                  reset_branch_panel();
                }else{
                   set_global_message("No Node Found");
                   link = 0;
@@ -163,6 +163,8 @@ int main(void)
                link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
                if(link_node != NULL && link_node != ((BRANCH_FLOW *)nodes[mod_index])->yes.to){
                   ((BRANCH_FLOW *)nodes[mod_index])->no = create_link_from(nodes[mod_index], link_node);
+                  reset_branch_panel();
+
                }else{
                   set_global_message("No Node Found");
                }
@@ -171,7 +173,11 @@ int main(void)
             global_status = 0;
          }else if(rmb_menu.visible){
             if(is_mouse_collision(rmb_menu.x, rmb_menu.y, rmb_menu.width, rmb_menu.height)){
-               rmb_menu_option_selection(&rmb_menu);
+               if(button_collision(&rmb_menu.close)){
+                  set_invisible(&rmb_menu);
+               }else{
+                  rmb_menu_option_selection(&rmb_menu);
+               }
             }else{
                set_invisible(&rmb_menu);
             }
@@ -201,64 +207,3 @@ int main(void)
    return 0;
 }
 
-void save_model(GEN_FLOW *flow[], int length){
-   FILE *fp = fopen(file_name, "wb");
-   if(fp == NULL){
-      set_global_message("Unable to open file");
-
-      return;
-   }
-
-   fwrite(&length, sizeof(int), 1, fp);
-   for(int i = 0; i < length; ++i){
-      fwrite(flow[i], sizeof(GEN_FLOW), 1, fp);
-      if(flow[i]->type == NODE){
-         BRANCH_FLOW *branch = (BRANCH_FLOW *)flow[i];
-         fwrite(&branch->btype, sizeof(BRANCH_TYPE), 1, fp);
-
-         if(branch->yes.to){
-            fwrite(branch->yes.to->uuid, sizeof(char[16]), 1, fp);
-            fwrite(&branch->yes.midx, sizeof(int), 1, fp);
-            fwrite(&branch->yes.midy, sizeof(int), 1, fp);
-         }
-
-         if(branch->no.to){
-            fwrite(branch->no.to->uuid, sizeof(char[16]), 1, fp);
-            fwrite(&branch->no.midx, sizeof(int), 1, fp);
-            fwrite(&branch->no.midy, sizeof(int), 1, fp);
-         }
-
-      }else if(flow[i]->type == BRANCH){
-         NODE_FLOW *node = (NODE_FLOW *)flow[i];
-         fwrite(&node->width, sizeof(int), 1, fp);
-         fwrite(&node->height, sizeof(int), 1, fp);
-         fwrite(&node->text_width, sizeof(int), 1, fp);
-         fwrite(node->value, sizeof(char), strlen(node->value), fp);
-
-         if(node->next.to){
-            fwrite(node->next.to->uuid, sizeof(char[16]), 1, fp);
-            fwrite(&node->next.midx, sizeof(int), 1, fp);
-            fwrite(&node->next.midy, sizeof(int), 1, fp);
-         }
-      }else{
-         fprintf(stderr, "Unable to save flow type\n");
-         exit(1);
-      }
-   }
-
-   fclose(fp);
-}
-
-GEN_FLOW **load_model(int *length){
-   FILE *fp = fopen(file_name, "wb");
-   if(fp == NULL){
-      set_global_message("Unable to open file");
-      *length = -1;
-
-      return NULL;
-   }
-   fread(length, sizeof(int), 1, fp);
-   
-
-   fclose(fp);
-}
