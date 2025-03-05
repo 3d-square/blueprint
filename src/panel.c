@@ -1,8 +1,8 @@
 #include "raylib.h"
 #include "flow.h"
 #include "panel.h"
-#include "button.h"
 #include "cutils.h"
+#include "ui.h"
 #include <string.h>
 #include <stdio.h>
 #include "globals.h"
@@ -51,9 +51,9 @@ void init_panels(){
       .link_midpoint_1 = {0},
       .link_midpoint_2 = {0},
       .branch = NULL,
-      .btn1 = create_button(x + 7, y_offset + 75, 15, 15, "X", 15),
-      .btn2 = create_button(x + 7, y_offset + 125, 15, 15, "X", 15),
-      .delete = create_button(x, screenHeight - 25, 200, 25, "Delete Branch", 15)
+      .btn1 = create_button(x + 7, y_offset + 75, 15, 15, "X", 15, WHITE, CENTER_JUSTIFY),
+      .btn2 = create_button(x + 7, y_offset + 125, 15, 15, "X", 15, WHITE, CENTER_JUSTIFY),
+      .delete = create_button(x, screenHeight - 25, 200, 25, "Delete Branch", 15, WHITE, CENTER_JUSTIFY)
    };
    node_panel = (struct node_panel){
       .x = x,
@@ -64,8 +64,8 @@ void init_panels(){
       .focus = 0,
       .link_midpoint = {0},
       .node = NULL,
-      .btn = create_button(x + 7, y_offset + 75, 15, 15, "X", 15),
-      .delete = create_button(x, screenHeight - 25, 200, 25, "Delete Node", 15)
+      .btn = create_button(x + 7, y_offset + 75, 15, 15, "X", 15, WHITE, CENTER_JUSTIFY),
+      .delete = create_button(x, screenHeight - 25, 200, 25, "Delete Node", 15, WHITE, CENTER_JUSTIFY)
    };
 
    text_height = GetFontDefault().baseSize;

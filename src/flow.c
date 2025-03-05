@@ -317,9 +317,9 @@ void draw_graph(GEN_FLOW *graph){
       printf("Too many nodes on the screen to draw them all\n");
    }
 }
-
+/*
 FLOW_LINK *execute_branch(BRANCH_FLOW *branch){
- /*   int cmp_val = branch->cmp(branch->lhs, branch->lhs);
+    int cmp_val = branch->cmp(branch->lhs, branch->lhs);
     FLOW_LINK *result = &branch->yes;
     switch(branch->btype){
         case GT:{
@@ -339,9 +339,10 @@ FLOW_LINK *execute_branch(BRANCH_FLOW *branch){
         }break;
     }
 
-    return result; */
+    return result; 
    return NULL;
 }
+*/
 
 GEN_FLOW *get_node_at(GEN_FLOW *nodes[], int num_nodes, int x, int y){
    for(int i = 0; i < num_nodes; ++i){

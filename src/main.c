@@ -9,7 +9,7 @@
 #include "prints.h"
 #include "panel.h"
 #include "globals.h"
-#include "options.h"
+#include "ui.h"
 
 #define DEBUGF(fmt, ...) printf("[DEBUG]: " fmt, __VA_ARGS__)
 #define DEBUG(f) printf("[DEBUG]: " f "\n")
@@ -49,6 +49,7 @@ int main(void)
    int link = 0;
 
    init_panels();
+   BUTTON save = create_button(0, 0, 100, 50, "SAVE", 25, GREEN, CENTER_JUSTIFY);
 
    load_model(nodes, &num_nodes);
 
@@ -114,7 +115,10 @@ int main(void)
             set_invisible(&rmb_menu);
          }
       }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-         if(link > 0){
+         if(button_collision(&save)){
+            set_global_message("Saving...");
+            save_model(nodes, num_nodes);
+         }else if(link > 0){
             link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
 
             if(link_node != NULL){
@@ -173,13 +177,12 @@ int main(void)
          DrawRectangleLines(screenWidth - (message_width), 0, message_width, 50, BLACK);
          DrawText(screen_message, screenWidth - message_width + 10, 17, 15, RED);
 
+         draw_button(&save);
          show_branch_flow();
          show_node_flow();
          draw_menu(&rmb_menu);
       EndDrawing();
    }
-
-   save_model(nodes, num_nodes);
 
    delete_menu(&rmb_menu);
    free_graph(nodes, num_nodes);

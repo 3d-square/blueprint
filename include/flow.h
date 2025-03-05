@@ -109,7 +109,7 @@ void remove_node(GEN_FLOW *removed, GEN_FLOW *nodes[], int length);
 
 GEN_FLOW *get_node_at(GEN_FLOW *nodes[], int num_nodes, int x, int y);
 
-FLOW_LINK *execute_branch(BRANCH_FLOW *branch);
+// FLOW_LINK *execute_branch(BRANCH_FLOW *branch);
 int int_cmp  (BYTES lhs, BYTES rhs);
 int float_cmp(BYTES lhs, BYTES rhs);
 int str_cmp  (BYTES lhs, BYTES rhs);

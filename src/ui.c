@@ -1,12 +1,68 @@
 #include "globals.h"
-#include "options.h"
-#include "button.h"
 #include "raylib.h"
 #include "cutils.h"
+#include "ui.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+
+//
+//      BUTTON FUNCTIONS
+//
+
+BUTTON create_button(int x, int y, int w, int h, char *text, int text_size, Color textcolor, JUSTIFY position){
+   BUTTON result = {
+      .x = x,
+      .y = y,
+      .width = w,
+      .height = h,
+      .text = text,
+      .text_size = text_size,
+      .textcolor = textcolor
+   };
+   Vector2 text_dim = MeasureTextEx(GetFontDefault(), text, text_size, 1.0);
+   printf("Text['%s'] Dim(%f,%f)\n", text, text_dim.x, text_dim.y);
+
+   switch(position){
+      case RIGHT_JUSTIFY:{
+         result.text_x = x + w - ((int)text_dim.x + 1);
+         result.text_y = y + 1;
+      }break;
+      case LEFT_JUSTIFY:{
+         result.text_x = x + 2;
+         result.text_y = y + 1;
+      }break;
+      case CENTER_JUSTIFY:{
+         result.text_x = x + (w / 2) - ((int)text_dim.x / 2);
+         result.text_y = y + (h / 2) - ((int)text_dim.y / 2);
+      }break;
+   }
+   
+   return result;
+}
+
+void draw_button(BUTTON *button){
+   Color color = button_collision(button) ? LIGHTGRAY : DARKGRAY;
+
+   DrawRectangle(button->x, button->y, button->width, button->height, color);
+   DrawRectangleLines(button->x, button->y, button->width, button->height, BLACK);
+
+   DrawText(button->text, button->text_x, button->text_y, button->text_size, button->textcolor);
+}
+
+int button_collision(BUTTON *button){
+   return is_mouse_collision(button->x, button->y, button->width, button->height);
+}
+
+int button_activate(BUTTON *button, MouseButton btn){
+   return button_collision(button) && IsMouseButtonPressed(btn);
+}
+
+//
+//      OPTION MENU FUNCTIONS
+//
 
 OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, int num_buttons){
    size_t size = sizeof(BUTTON) * num_buttons;
@@ -21,7 +77,7 @@ OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, 
       .num_buttons = num_buttons,
       .selected = -1,
       .visible = 0,
-      .close = create_button(0, 0, 15, 15, "X", 15),
+      .close = create_button(0, 0, 15, 15, "X", 15, WHITE, LEFT_JUSTIFY),
    };  
    
    result.buttons = malloc(size);
@@ -31,7 +87,7 @@ OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, 
       result.buttons[i] = create_button(0, 0,
                                         w - 2,
                                         button_height, 
-                                        buttons[i], 10);
+                                        buttons[i], 10, WHITE, LEFT_JUSTIFY);
    }
    
    return result;

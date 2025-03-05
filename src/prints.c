@@ -93,7 +93,6 @@ void save_model(GEN_FLOW *flow[], int length){
 
    fwrite(&length, sizeof(int), 1, fp);
    for(int i = 0; i < length; ++i){
-      printf("loops[%d[\n", i);
       fwrite(&flow[i]->type, sizeof(FLOW), 1, fp);
 
       if(flow[i]->type == BRANCH){
@@ -141,7 +140,7 @@ void load_model(GEN_FLOW *nodes[], int *length){
          branch_from_info(&infos[i].branch_info, (BRANCH_FLOW *)nodes[i]);
       }else{
          fprintf(stderr, "Unable to read the next flow node\n");
-         exit(1);
+         free_graph(nodes, i);
       }
       nodes[i]->type = type;
    }
