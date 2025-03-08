@@ -45,6 +45,7 @@ int get_directory_info(struct dir_info *directory){
    DIR *dir;
    struct dirent *ent;
    char buffer_path[2 + MAX_PATH * 2];
+    directory->count = 0;
   
    if ((dir = opendir (directory->absolute_path)) != NULL) {
       /* print all the files and directories within directory */
@@ -66,4 +67,22 @@ int get_directory_info(struct dir_info *directory){
    }
 
    return 0;
+}
+
+char *files[MAX_FILES] = {0};
+
+void free_files_array(){
+   for(int i = 0; i < MAX_FILES; ++i){
+      free(files[i]);
+   }
+}
+
+char **files_to_char_array(struct dir_info *directory){
+   free_files_array(files);
+   memset(files, 0, MAX_FILES * sizeof(char *));
+   for(int i = 0; i < directory->count; ++i){
+      files[i] = strdup(directory->files[i].name);
+   }
+
+   return files;
 }

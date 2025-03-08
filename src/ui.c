@@ -20,10 +20,11 @@ BUTTON create_button(int x, int y, int w, int h, char *text, int text_size, Colo
       .height = h,
       .text = text,
       .text_size = text_size,
-      .textcolor = textcolor
+      .textcolor = textcolor,
+      .position = position,
    };
    Vector2 text_dim = MeasureTextEx(GetFontDefault(), text, text_size, 1.0);
-   printf("Text['%s'] Dim(%f,%f)\n", text, text_dim.x, text_dim.y);
+   // printf("Text['%s'] Dim(%f,%f)\n", text, text_dim.x, text_dim.y);
 
    switch(position){
       case RIGHT_JUSTIFY:{
@@ -45,6 +46,7 @@ BUTTON create_button(int x, int y, int w, int h, char *text, int text_size, Colo
 
 void draw_button(BUTTON *button){
    Color color = button_collision(button) ? LIGHTGRAY : DARKGRAY;
+   // printf("B:%d, %d\n", button->text_x, button->text_y);
 
    DrawRectangle(button->x, button->y, button->width, button->height, color);
    DrawRectangleLines(button->x, button->y, button->width, button->height, BLACK);
@@ -64,8 +66,7 @@ int button_activate(BUTTON *button, MouseButton btn){
 //      OPTION MENU FUNCTIONS
 //
 
-OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, int num_buttons){
-   size_t size = sizeof(BUTTON) * num_buttons;
+OPTION_MENU create_option_menu(int x, int y, int w, int h, char *text, char **buttons, int num_buttons){
    int button_height = GetFontDefault().baseSize + 4;
 
    OPTION_MENU result = {
@@ -78,24 +79,79 @@ OPTION_MENU create_menu(int x, int y, int w, int h, char *text, char **buttons, 
       .selected = -1,
       .visible = 0,
       .close = create_button(0, 0, 15, 15, "X", 15, WHITE, LEFT_JUSTIFY),
+      .buttons = NULL,
    };  
    
-   result.buttons = malloc(size);
-   assert(result.buttons);
-
-   for(int i = 0; i < num_buttons; ++i){
-      result.buttons[i] = create_button(0, 0,
-                                        w - 2,
-                                        button_height, 
-                                        buttons[i], 10, WHITE, LEFT_JUSTIFY);
-   }
+   recreate_buttons(&result.buttons, 0, 0, w - 2, button_height, buttons, num_buttons);
    
    return result;
 }
 
-void delete_menu(OPTION_MENU *menu){
+void recreate_buttons(BUTTON **buttons, int x, int y, int w, int h, char **buttons_text, int num_buttons){
+   size_t size = sizeof(BUTTON) * num_buttons;
+
+   BUTTON *new_buttons = realloc(*buttons, size);
+
+   if(new_buttons == NULL){
+      printf("Unable to allocate new buttons\n");
+      exit(-1);
+   }
+
+   for(int i = 0; i < num_buttons; ++i){
+      new_buttons[i] = create_button(x, (h * i) + y + (2 * i),
+                                     w, h, 
+                                     buttons_text[i], 10, WHITE, LEFT_JUSTIFY);
+   }
+   
+   *buttons = new_buttons;
+}
+
+OPTION_PANEL create_option_panel(int x, int y, int w, int h, char *text, char **buttons, int num_buttons){
+   int button_height = GetFontDefault().baseSize + 4;
+
+   OPTION_PANEL result = {
+      .x = x,
+      .y = y,
+      .width = w,
+      .height = h,
+      .text = text,
+      .num_buttons = num_buttons,
+      .selected = -1,
+      .buttons = NULL,
+   };  
+    
+   recreate_buttons(&result.buttons, 0, 0, w - 2, button_height, buttons, num_buttons);
+   return result;
+}
+
+void delete_option_menu(OPTION_MENU *menu){
    free(menu->buttons);
    menu->buttons = NULL;
+}
+
+void delete_option_panel(OPTION_PANEL *menu){
+   free(menu->buttons);
+   menu->buttons = NULL;
+}
+
+void update_button_position(BUTTON *button, int x, int y){
+      Vector2 text_dim = MeasureTextEx(GetFontDefault(), button->text, button->text_size, 1.0);
+      button->x = x + 1;
+      button->y = y;
+      switch(button->position){
+         case RIGHT_JUSTIFY:{
+            button->text_x = x + button->width - ((int)text_dim.x + 1);
+            button->text_y = y + 1;
+         }break;
+         case LEFT_JUSTIFY:{
+            button->text_x = x + 2;
+            button->text_y = y + 1;
+         }break;
+         case CENTER_JUSTIFY:{
+            button->text_x = x + (button->width / 2) - ((int)text_dim.x / 2);
+            button->text_y = y + (button->height / 2) - ((int)text_dim.y / 2);
+         }break;
+      }
 }
 
 void set_visible(OPTION_MENU *menu){
@@ -105,13 +161,26 @@ void set_visible(OPTION_MENU *menu){
    menu->x = mouse_position.x;
    menu->y = mouse_position.y;
    menu->visible = 1;
-   menu->close.x = menu->x + menu->width - 16;
-   menu->close.y = menu->y + 1;
+
+   update_button_position(&menu->close, menu->x + menu->width - 16, menu->y + 1);
 
    for(int i = 0; i < menu->num_buttons; ++i){
-      menu->buttons[i].x = mouse_position.x + 1;
-      menu->buttons[i].y = offset + (button_height * i);
+      update_button_position(&menu->buttons[i], mouse_position.x, (i * button_height) + offset);
    }
+}
+
+void update_option_panel_position(OPTION_PANEL *menu){
+   int button_height = GetFontDefault().baseSize + 6;
+   int offset = mouse_position.y + 25;
+
+   menu->x = mouse_position.x;
+   menu->y = mouse_position.y;
+
+   for(int i = 0; i < menu->num_buttons; ++i){
+      update_button_position(&menu->buttons[i], mouse_position.x, (i * button_height) + offset);
+   }
+
+
 }
 
 void set_invisible(OPTION_MENU *menu){
@@ -119,7 +188,7 @@ void set_invisible(OPTION_MENU *menu){
    menu->selected = 0;
 }
 
-void draw_menu(OPTION_MENU *menu){
+void draw_option_menu(OPTION_MENU *menu){
    if(menu->visible != 1) return;
    DrawRectangle(menu->x, menu->y, menu->width, menu->height, GRAY);
    DrawRectangleLines(menu->x, menu->y, menu->width, menu->height, BLACK);
@@ -131,7 +200,8 @@ void draw_menu(OPTION_MENU *menu){
    }
    
 }
-int update_menu(OPTION_MENU *menu){
+
+int update_option_menu(OPTION_MENU *menu){
    if(menu->visible != 1){
       fprintf(stderr, "Unable to update a menu that is invisibel\n");
       set_global_message("Window Invisible");
@@ -154,6 +224,26 @@ int update_menu(OPTION_MENU *menu){
    return 0;
 }
 
-int get_selected(OPTION_MENU *menu){
-   return menu->selected;
+void draw_option_panel(OPTION_PANEL *menu){
+   DrawRectangle(menu->x, menu->y, menu->width, menu->height, GRAY);
+   DrawRectangleLines(menu->x, menu->y, menu->width, menu->height, BLACK);
+   DrawText(menu->text, menu->x, menu->y, 15, BLACK);
+   
+   for(int i = 0; i < menu->num_buttons; ++i){
+      draw_button(&menu->buttons[i]);
+   }
+   
+}
+
+int update_option_panel(OPTION_PANEL *menu){
+   if(!is_mouse_collision(menu->x, menu->y ,menu->width ,menu->height)) return 0;
+
+   for(int i = 0; i < menu->num_buttons; ++i){
+      if(button_activate(&menu->buttons[i], MOUSE_BUTTON_LEFT)){
+         menu->selected = i;
+         return 1;
+      }
+   }
+   
+   return 0;
 }
