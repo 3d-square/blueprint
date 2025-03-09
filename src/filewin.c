@@ -4,6 +4,7 @@
 #include "directory_info.h"
 #include "prints.h"
 #include "globals.h"
+#include "panel.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -73,6 +74,8 @@ int update_filewin_info(FILEWIN *filewin, GEN_FLOW *graph[], int *num_nodes){
          strcpy(file_name, filewin->load_file);
          printf("loding %s\n", file_name);
          free_graph(graph, *num_nodes);
+         clear_branch_panel();
+         clear_node_panel();
          int status = load_model(graph, num_nodes);
    
          if(status == -1){

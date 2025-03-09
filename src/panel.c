@@ -161,6 +161,19 @@ void reset_branch_panel(){
    branch_panel.mpl2 = strlen(branch_panel.link_midpoint_2);
 }
 
+void clear_branch_panel(){
+   branch_panel.branch = NULL;
+   branch_panel.link_midpoint_1[0] = '\0';
+   branch_panel.link_midpoint_2[0] = '\0';
+   branch_panel.focus = 0;
+}
+
+void clear_node_panel(){
+   node_panel.node = NULL;
+   node_panel.link_midpoint[0] = '\0';
+   node_panel.focus = 0;
+}
+
 void reset_node_panel(){
    if(node_panel.node == NULL) return;
    sprintf(node_panel.link_midpoint, "%d,%d", node_panel.node->next.midx, node_panel.node->next.midy);

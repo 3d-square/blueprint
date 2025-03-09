@@ -82,6 +82,7 @@ void link_from_uuid(GEN_FLOW *from, FLOW_LINK *link, char *uuid, int x, int y, G
 }
 
 void save_model(GEN_FLOW *flow[], int length){
+   set_global_message("Saving Model");
    FILE *fp = fopen(file_name, "wb");
    if(fp == NULL){
       set_global_message("Unable to open file");
@@ -113,6 +114,7 @@ void save_model(GEN_FLOW *flow[], int length){
 }
 
 int load_model(GEN_FLOW *nodes[], int *length){
+   set_global_message("Loading Model");
    FLOW_INFO infos[MAXGRAPHNODES];
    FILE *fp = fopen(file_name, "rb");
    if(fp == NULL){

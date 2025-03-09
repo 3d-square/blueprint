@@ -61,7 +61,7 @@ int main(void)
    FILEWIN select_file;
    init_filewin(&select_file, 250, 50, 500, 500);
    
-   TEXT_BOX file_name_box = create_text_box(250, 150, 500, 50, 64, 25);
+   TEXT_BOX file_name_box = create_text_box(250, 150, 700, 25, 64, 15);
    
    // select_file.visible = 1;
    // set_cwd(&select_file);
@@ -79,7 +79,6 @@ int main(void)
 
          if(status == 1){
             if(file_name_box.length > 0){
-               set_global_message("Saving file...");
                strcpy(file_name, file_name_box.text);
                save_model(nodes, num_nodes);
                file_name_box.selected = 0;

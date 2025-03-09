@@ -1,5 +1,6 @@
 #include "globals.h"
 #include "raylib.h"
+#include <stdio.h>
 #include <string.h>
 
 Vector2 mouse_position;
@@ -40,13 +41,19 @@ void set_global_message(char *msg){
    queue_tail += 1;
    if(queue_tail == 15){
       queue_tail = 0;
-      if(message_queue[0].timer != 0.0){
-         return;
-      }
    }
+
+   if(queue_tail == queue_index && message_queue[queue_tail].timer != 0){
+      queue_tail--;
+      return;
+   }
+   
    strcpy(message_queue[queue_tail].screen_message, msg);
    message_queue[queue_tail].timer = 2.5;
 
+   if(queue_tail == queue_index){
+      strcpy(screen_message, message_queue[queue_tail].screen_message);
+   }
    
    // message_width = MeasureText(screen_message, 10);
 }

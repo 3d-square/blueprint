@@ -10,3 +10,5 @@ void reset_branch_panel();
 void reset_node_panel();
 int update_node_panel(GEN_FLOW *nodes[], int *length);
 void update_panel(GEN_FLOW *nodes[], int *length);
+void clear_branch_panel();
+void clear_node_panel();
