@@ -18,7 +18,7 @@
 GEN_FLOW *nodes[MAXGRAPHNODES];
 int num_nodes = 0;
 int mod_index = 0;
-char file_name[64] = "model.dat";
+char file_name[64] = {0};
 
 void rmb_menu_option_selection(OPTION_MENU *menu){
    if(update_option_menu(menu)){
@@ -48,18 +48,22 @@ int main(void)
    OPTION_MENU rmb_menu = create_option_menu(0, 0, 75, 150, "RMB", rmb_buttons, 2);
 
    int link = 0;
+   int save_window = 0;
 
    init_panels();
-   BUTTON save = create_button(0, 0, 100, 50, "SAVE", 25, GREEN, CENTER_JUSTIFY);
+   BUTTON load_file = create_button(0, 0, 100, 35, "LOAD FILE", 15, WHITE, CENTER_JUSTIFY);
+   BUTTON save = create_button(0, 35, 100, 35, "SAVE", 15, GREEN, CENTER_JUSTIFY);
 
-   load_model(nodes, &num_nodes);
+   // load_model(nodes, &num_nodes);
 
    GEN_FLOW *link_node;
 
    FILEWIN select_file;
-
    init_filewin(&select_file, 250, 50, 500, 500);
-   select_file.visible = 1;
+   
+   TEXT_BOX file_name_box = create_text_box(250, 150, 500, 50, 64, 25);
+   
+   // select_file.visible = 1;
    // set_cwd(&select_file);
    // update_filewin_info(&select_file);
 
@@ -69,7 +73,24 @@ int main(void)
       update_globals();
 
       if(select_file.visible){
-         update_filewin_info(&select_file);
+         update_filewin_info(&select_file, nodes, &num_nodes);
+      }else if(save_window == 1){
+         int status = update_text_box(&file_name_box);
+
+         if(status == 1){
+            if(file_name_box.length > 0){
+               set_global_message("Saving file...");
+               strcpy(file_name, file_name_box.text);
+               save_model(nodes, num_nodes);
+               file_name_box.selected = 0;
+               save_window = 0;
+            }else{
+               set_global_message("File cannot be empty");
+            }
+         }else if(status == -1){
+            strcpy(file_name, file_name_box.text);
+            save_window = 0;
+         }
       }else{
          if(link == 0){
             update_panel(nodes, &num_nodes);
@@ -127,8 +148,12 @@ int main(void)
             }
          }else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
             if(button_collision(&save)){
-               set_global_message("Saving...");
-               save_model(nodes, num_nodes);
+               // set_global_message("Saving...");
+               // save_model(nodes, num_nodes);
+               save_window = 1;
+               strcpy(file_name_box.text, file_name);
+            }else if(button_collision(&load_file)){
+               select_file.visible = 1;
             }else if(link > 0){
                link_node = get_node_at(nodes, num_nodes, mouse_position.x, mouse_position.y);
 
@@ -190,13 +215,16 @@ int main(void)
          DrawText(screen_message, screenWidth - message_width + 10, 17, 15, RED);
 
          draw_button(&save);
+         draw_button(&load_file);
          show_branch_flow();
          show_node_flow();
          draw_option_menu(&rmb_menu);
          draw_filewin(&select_file);
+         if(save_window) draw_text_box(&file_name_box);
       EndDrawing();
    }
 
+   delete_text_box(&file_name_box);
    uninit_filewin(&select_file);
    delete_option_menu(&rmb_menu);
    free_graph(nodes, num_nodes);

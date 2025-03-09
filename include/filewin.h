@@ -1,6 +1,7 @@
 #pragma once
 #include "raylib.h"
 #include "ui.h"
+#include "flow.h"
 #include <dirent.h>
 #include <sys/types.h>
 #include <linux/limits.h>
@@ -21,5 +22,5 @@ typedef struct _filewin{
 void init_filewin(FILEWIN *filwwin, int x, int y, int width, int height);
 void draw_filewin(FILEWIN *filewin);
 void set_cwd(FILEWIN *filewin);
-int update_filewin_info(FILEWIN *filewin);
-void uninit_filewin(FILEWIN *file);
+int update_filewin_info(FILEWIN *filewin, GEN_FLOW *graph[], int *num_nodes);
+void uninit_filewin(FILEWIN *filewin);

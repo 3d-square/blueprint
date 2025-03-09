@@ -112,14 +112,13 @@ void save_model(GEN_FLOW *flow[], int length){
    fclose(fp);
 }
 
-void load_model(GEN_FLOW *nodes[], int *length){
+int load_model(GEN_FLOW *nodes[], int *length){
    FLOW_INFO infos[MAXGRAPHNODES];
    FILE *fp = fopen(file_name, "rb");
    if(fp == NULL){
       set_global_message("Unable to open file");
-      *length = -1;
-
-      return;
+      *length = 0;
+      return -2;
    }
    fread(length, sizeof(int), 1, fp);
 
@@ -141,6 +140,8 @@ void load_model(GEN_FLOW *nodes[], int *length){
       }else{
          fprintf(stderr, "Unable to read the next flow node\n");
          free_graph(nodes, i);
+         *length = 0;
+         return -1;
       }
       nodes[i]->type = type;
    }
@@ -175,4 +176,5 @@ void load_model(GEN_FLOW *nodes[], int *length){
 
    node_id = node_id + 1;
    fclose(fp);
+   return 0;
 }

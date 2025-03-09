@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "globals.h"
+#include "stdio.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -48,10 +49,11 @@ int str_to_coord(char *str, int *x, int *y){
    
 }
 
-void update_text_box(char *text, int length){
+int update_text_field(char *text, int length){
    int key = GetCharPressed();
    int tmp_len = strlen(text);
    while(key > 0){
+   printf("key: %d\n", key);
       if((key >= 32) && (key <= 125) && (tmp_len < length)){
          text[tmp_len++] = (char)key;
       }
@@ -62,4 +64,6 @@ void update_text_box(char *text, int length){
       tmp_len -= 1;
       text[tmp_len] = '\0';
    }
+
+   return tmp_len;
 }

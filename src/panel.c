@@ -220,10 +220,10 @@ int update_branch_panel(GEN_FLOW *nodes[], int *length){
          reset_branch_panel();
          set_global_message("Branch Deleted");
       }else if(is_mouse_collision(branch_panel.x + 13, branch_panel.y + 100, 100, text_height + 8)){
-         update_text_box(branch_panel.link_midpoint_1, 9);
+         update_text_field(branch_panel.link_midpoint_1, 9);
          do_coordinate_enter(branch_panel.link_midpoint_1, &branch_panel.branch->yes.midx, &branch_panel.branch->yes.midy);
       }else if(is_mouse_collision(node_panel.x + 13, node_panel.y + 155, 100, text_height + 8)){
-         update_text_box(branch_panel.link_midpoint_2, 9);
+         update_text_field(branch_panel.link_midpoint_2, 9);
          do_coordinate_enter(branch_panel.link_midpoint_2, &branch_panel.branch->no.midx, &branch_panel.branch->no.midy);
       }
       return BRANCH_PANEL_FOCUS;
@@ -244,7 +244,7 @@ int update_node_panel(GEN_FLOW *nodes[], int *length){
          node_panel.node = NULL;
          set_global_message("Node Deleted");
       }else if(is_mouse_collision(node_panel.x + 13, node_panel.y + 100, 100, text_height + 8)){
-         update_text_box(node_panel.link_midpoint, 9);
+         update_text_field(node_panel.link_midpoint, 9);
          do_coordinate_enter(node_panel.link_midpoint, &node_panel.node->next.midx, &node_panel.node->next.midy);
       }
       return NODE_PANEL_FOCUS;

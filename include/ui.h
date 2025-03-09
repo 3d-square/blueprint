@@ -38,6 +38,15 @@ typedef struct _options_panel{
    int selected;
 } OPTION_PANEL;
 
+typedef struct _text_box{
+   Rectangle rect;
+   char *text;
+   int capacity;
+   int length;
+   int text_size;
+   int selected;
+} TEXT_BOX;
+
 #define get_selected_ref(opt) (opt)->selected
 #define get_selected(opt) (opt).selected
 
@@ -54,8 +63,12 @@ void delete_option_panel(OPTION_PANEL *menu);
 void update_option_panel_position(OPTION_PANEL *menu);
 void draw_option_panel(OPTION_PANEL *menu);
 
-
 BUTTON create_button(int x, int y, int w, int h, char *text, int text_size, Color textcolor, JUSTIFY position);
 void draw_button(BUTTON *button);
 int button_collision(BUTTON *button);
 int button_activate(BUTTON *button, MouseButton btn);
+
+TEXT_BOX create_text_box(int x, int y, int width, int height, int capacity, int text_size);
+void delete_text_box(TEXT_BOX *textbox);
+void draw_text_box(TEXT_BOX *textbox);
+int update_text_box(TEXT_BOX *textbox);

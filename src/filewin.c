@@ -2,6 +2,8 @@
 #include "ui.h"
 #include "filewin.h"
 #include "directory_info.h"
+#include "prints.h"
+#include "globals.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -10,9 +12,10 @@
 #include <linux/limits.h>
 #include <string.h>
 
+extern char file_name[64];
+
 void init_filewin(FILEWIN *filewin, int x, int y, int width, int height){
    int button_height = GetFontDefault().baseSize + 4;
-   char **files;
    memset(filewin, 0, sizeof(FILEWIN));
    filewin->x = x;
    filewin->y = y;
@@ -26,9 +29,7 @@ void init_filewin(FILEWIN *filewin, int x, int y, int width, int height){
    set_cwd(filewin); // update current directory to .
    get_directory_info(&filewin->directory); // update directory info
 
-   files = files_to_char_array(&filewin->directory); // turn dir files into a list of strings
-   
-   recreate_buttons(&filewin->buttons.buttons, filewin->x, filewin->y + 30, filewin->width - 2, button_height, files, filewin->directory.count); // create buttons for each of the files in the directory
+   recreate_buttons(&filewin->buttons.buttons, filewin->x, filewin->y + 30, filewin->width - 2, button_height, filewin->directory.file_names, filewin->directory.count); // create buttons for each of the files in the directory
    filewin->buttons.num_buttons = filewin->directory.count; // update number of buttons
 
 }
@@ -47,7 +48,6 @@ void draw_filewin(FILEWIN *filewin){
 }
 
 void uninit_filewin(FILEWIN *filewin){
-   free_files_array();
    delete_option_panel(&filewin->buttons);
 }
 
@@ -55,7 +55,8 @@ void set_cwd(FILEWIN *filewin){
    getcwd(filewin->directory.absolute_path, sizeof(filewin->directory.absolute_path));
 }
 
-int update_filewin_info(FILEWIN *filewin){
+int update_filewin_info(FILEWIN *filewin, GEN_FLOW *graph[], int *num_nodes){
+   if(!filewin->visible) return 1;
    for(int i = 0; i < filewin->directory.count; ++i){
       if(filewin->directory.files[i].type == DIRECTORY){
          filewin->buttons.buttons[i].textcolor = BLUE;
@@ -68,6 +69,15 @@ int update_filewin_info(FILEWIN *filewin){
       if(button_collision(&filewin->close)){
          filewin->visible = 0;
          return 1;
+      }else if(button_collision(&filewin->load)){
+         strcpy(file_name, filewin->load_file);
+         printf("loding %s\n", file_name);
+         free_graph(graph, *num_nodes);
+         int status = load_model(graph, num_nodes);
+   
+         if(status == -1){
+            set_global_message("Unable to open file");
+         }
       }
       for(int i = 0; i < filewin->directory.count; ++i){
          if(button_collision(&filewin->buttons.buttons[i])){
@@ -89,12 +99,9 @@ int update_filewin_info(FILEWIN *filewin){
                strcat(filewin->directory.absolute_path, info->name);
             }
 
-            printf("path: %s\n", filewin->directory.absolute_path);
             get_directory_info(&filewin->directory);
 
-            char **files = files_to_char_array(&filewin->directory);
-            printf("length: %d\n", filewin->directory.count);
-            recreate_buttons(&filewin->buttons.buttons, filewin->x, filewin->y + 30, filewin->width - 2, button_height, files, filewin->directory.count);
+            recreate_buttons(&filewin->buttons.buttons, filewin->x, filewin->y + 30, filewin->width - 2, button_height, filewin->directory.file_names, filewin->directory.count);
             filewin->buttons.num_buttons = filewin->directory.count; // update number of buttons
          }else{
             sprintf(filewin->load_file, "%s/%s", filewin->directory.absolute_path, info->name);

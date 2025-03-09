@@ -33,4 +33,4 @@ void branch_from_info(BRANCH_INFO *info, BRANCH_FLOW *flow);
 void node_from_info(NODE_INFO *info, NODE_FLOW *flow);
 void link_from_uuid(GEN_FLOW *from, FLOW_LINK *link, char *uuid, int x, int y, GEN_FLOW *nodes[], int length);
 void save_model(GEN_FLOW *flow[], int length);
-void load_model(GEN_FLOW *flow[], int *length);
+int load_model(GEN_FLOW *flow[], int *length);

@@ -25,6 +25,7 @@ struct file_info {
 struct dir_info{
    int count;
    struct file_info files[MAX_FILES];
+   char *file_names[MAX_FILES];
    char absolute_path[MAX_PATH + 1];
 };
 
@@ -32,6 +33,3 @@ void set_directory_path(struct dir_info *directory, char path[MAX_PATH + 1]);
 int get_directory_info(struct dir_info *directory);
 char *ftype_str(F_TYPE type);
 void file_permissions(char *filename, F_TYPE *file_type);
-
-char **files_to_char_array(struct dir_info *directory);
-void free_files_array();

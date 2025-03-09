@@ -19,4 +19,4 @@ int str_to_coord(char *str, int *x, int *y);
 
 int str2i(char *str, int *);
 
-void update_text_box(char *text, int length);
+int update_text_field(char *text, int length);

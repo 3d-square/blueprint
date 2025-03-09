@@ -247,3 +247,56 @@ int update_option_panel(OPTION_PANEL *menu){
    
    return 0;
 }
+
+//
+//    Text Box Functions
+//
+
+TEXT_BOX create_text_box(int x, int y, int width, int height, int capacity, int text_size){
+   TEXT_BOX result = {
+      .rect = (Rectangle){x, y, width, height},
+      .capacity = capacity,
+      .length = 0,
+      .selected = 0,
+      .text_size = text_size
+   };
+
+   result.text = malloc(sizeof(char) * capacity + 1);
+   assert(result.text);
+   result.text[0] = '\0';
+
+   return result;
+}
+
+void delete_text_box(TEXT_BOX *textbox){
+   free(textbox->text);
+}
+
+void draw_text_box(TEXT_BOX *textbox){
+   DrawRectangleRec(textbox->rect, GRAY);
+   DrawRectangleLinesEx(textbox->rect, 1.0, BLACK);
+   DrawText(textbox->text, textbox->rect.x + 2, textbox->rect.y + 2, textbox->text_size, WHITE);
+}
+int update_text_box(TEXT_BOX *textbox){
+   int on_textbox = is_mouse_collision(textbox->rect.x, textbox->rect.y, textbox->rect.width, textbox->rect.height);
+   if(!on_textbox){
+      if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)){
+         textbox->selected = 0;
+         return -1;
+      }
+      return 0;
+   }
+
+   if(on_textbox && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
+         textbox->selected = 1;
+   }
+
+   if(textbox->selected != 0){
+      textbox->length = update_text_field(textbox->text, textbox->capacity);
+      if(IsKeyPressed(KEY_ENTER)){
+         return 1;
+      }
+   }
+
+   return 0;
+}

@@ -7,6 +7,7 @@
 #include <linux/limits.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 char *ftype_str(F_TYPE type){
    switch(type){
@@ -55,6 +56,7 @@ int get_directory_info(struct dir_info *directory){
          sprintf(buffer_path, "%s/%s", directory->absolute_path, ent->d_name);
          strcpy(directory->files[directory->count].name, ent->d_name);
          file_permissions(buffer_path, &directory->files[directory->count].type);
+         directory->file_names[directory->count] = directory->files[directory->count].name;
          
          printf("[%-9.9s][%s]\n", ftype_str(directory->files[directory->count].type), directory->files[directory->count].name);
          directory->count++;
@@ -69,20 +71,3 @@ int get_directory_info(struct dir_info *directory){
    return 0;
 }
 
-char *files[MAX_FILES] = {0};
-
-void free_files_array(){
-   for(int i = 0; i < MAX_FILES; ++i){
-      free(files[i]);
-   }
-}
-
-char **files_to_char_array(struct dir_info *directory){
-   free_files_array(files);
-   memset(files, 0, MAX_FILES * sizeof(char *));
-   for(int i = 0; i < directory->count; ++i){
-      files[i] = strdup(directory->files[i].name);
-   }
-
-   return files;
-}
