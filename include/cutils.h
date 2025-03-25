@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stddef.h>
 
 #define remove_index(array, length, index)\
 for(int _i = index; _i < length - 1; ++_i){\
@@ -20,3 +20,5 @@ int str_to_coord(char *str, int *x, int *y);
 int str2i(char *str, int *);
 
 int update_text_field(char *text, int length);
+
+void *assert_alloc(size_t size);

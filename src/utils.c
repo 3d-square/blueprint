@@ -4,6 +4,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+void *assert_alloc(size_t size){
+   void *var = calloc(1, size);
+   if(var == NULL){
+      perror("Malloc Fail\n"); exit(-1);
+   }
+   return var;
+}
+
 int point_in_rect(int x, int y, int rx, int ry, int rw, int rh){
    return (x >= rx) && (y >= ry) && (x <= rx + rw) && (y <= ry + rh);
 }
