@@ -1,5 +1,5 @@
 #include "lang.h"
-#include "l_hash.h"
+#include <cutils/map.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +13,12 @@ void *assert_alloc(size_t size){
       perror("Malloc Fail\n"); exit(-1);
    }
    return var;
+}
+
+void l_token_free(L_TOKEN *token){
+   if(token->type != VAL_NUM){
+      free(token->str);
+   }
 }
 
 int main(){
@@ -33,6 +39,10 @@ int main(){
       fprintf(stderr, "Problem parsing file\n");
    }else{
       l_run_program(tokens, index);
+   }
+
+   for(int i = 0; i < index; ++i){
+      l_token_free(&tokens[i]);
    }
    return 0;
 }
@@ -125,6 +135,7 @@ void l_run_program(L_TOKEN *tokens, int length){
 
 void l_parse_program(L_TOKEN *tokens, int length, int *exe_len){
    int stack_size = 0;  
+   map symbols = map_create(NULL);
    for(int i = 0; i < length; ++i){
       L_TOKEN *curr = &tokens[i];
       switch(curr->type){
@@ -149,10 +160,15 @@ void l_parse_program(L_TOKEN *tokens, int length, int *exe_len){
                break;
             }
             stack_size--;
+         break;
+         case ID:
+            if(!map_contains(symbols, curr->str)) printf("Register symbol[%s]\n", curr->str);
+            map_put(symbols, curr->str, curr);
          default:
             break;
       }
    }
+   map_destroy(symbols);
 }
 
 int is_number(char *str){
