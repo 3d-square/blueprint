@@ -1,42 +1,33 @@
 #pragma once
 
 #include <stdio.h>
+#include <lexer.h>
+#include <cutils/list.h>
 
-enum token_type{
-   VAL_NUM,
-   VAL_STR,
-   ID,
-   FUNC,
-   PLUS,
-   MINUS,
-   DIV,
-   MULT,
-   PRINT,
-   NONE
-};
-
-typedef struct _token{
+typedef struct _p_token{
    enum token_type type;
-   int col;
-   int line;
    union {
       double number;
+      struct func_data *funcion;
       char *str;
+      char *name;
    };
-} L_TOKEN;
+} P_TOKEN;
 
-L_TOKEN l_read_token();
+typedef union _bytes_8{
+   double number;
+   void *data;
+   char *str;
+   P_TOKEN *instr;
+} BYTES_8;
 
-void l_lexer_from_file(char *file);
+typedef struct _stack_val{
+   enum token_type type;
+   BYTES_8 val;
+} STACK_VAL;
 
-void l_set_lexer(char *data);
+int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len);
 
-void l_delete_token(L_TOKEN *token);
+void run_program(P_TOKEN *tokens, int length);
 
-int l_lexer_is_empty();
-
-void l_parse_program(L_TOKEN *tokens, int length, int *exe_len);
-
-void l_run_program(L_TOKEN *tokens, int length);
-
-char *l_token_str(enum token_type);
+P_TOKEN conv_token(L_TOKEN *token);
