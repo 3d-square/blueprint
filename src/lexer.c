@@ -26,6 +26,8 @@ char *token_str(enum token_type type){
       case DIV: return "DIV";
       case MULT: return "MULT";
       case NONE: return "NONE";
+      case PAREN_OPEN: return "PAREN_OPEN";
+      case PAREN_CLOSE: return "PAREN_CLOSE";
       default: return "NULL";
    };
 }
@@ -60,6 +62,10 @@ enum token_type get_token_type(char *str){
       type = MULT;
    }else if(strcmp(str, "/") == 0){
       type = DIV;
+   }else if(strcmp(str, "(") == 0){
+      type = PAREN_OPEN;
+   }else if(strcmp(str, ")") == 0){
+      type = PAREN_CLOSE;
    }else if(strcmp(str, "dump") == 0){
       type = PRINT;
    }else if(strcmp(str, "set") == 0){
@@ -100,6 +106,11 @@ void lexer_from_file(char *file){
    fread(data, size, 1, fp);
 
    set_lexer(data);
+   fclose(fp);
+}
+
+void lexer_destroy(){
+   free(lexer.data);
 }
 
 void set_lexer(char *data){
@@ -124,22 +135,13 @@ int end_of_token(){
 
    char *curr = lexer.data + lexer.index + 1;
 
-   if(strncmp(curr, "+=", 2) == 0){
-      end = 1;
-      lexer.found_next = 2;
-   }else if(strncmp(curr, "+", 1) == 0){
-      end = 1;
-      lexer.found_next = 1;
-   }else if(strncmp(curr, "-", 1) == 0){
-      end = 1;
-      lexer.found_next = 1;
-   }else if(strncmp(curr, "*", 1) == 0){
-      end = 1;
-      lexer.found_next = 1;
-   }else if(strncmp(curr, "/", 1) == 0){
-      end = 1;
-      lexer.found_next = 1;
-   }else if(strncmp(curr, ";", 1) == 0){
+   if( strncmp(curr, "+", 1) == 0
+    || strncmp(curr, "-", 1) == 0
+    || strncmp(curr, "*", 1) == 0
+    || strncmp(curr, "/", 1) == 0
+    || strncmp(curr, ";", 1) == 0 
+    || strncmp(curr, "(", 1) == 0
+    || strncmp(curr, ")", 1) == 0){
       end = 1;
       lexer.found_next = 1;
    }
@@ -172,6 +174,7 @@ L_TOKEN read_token(){
         token.number = strtod(buffer, NULL);
      }else{
         token.str = strdup(buffer);
+        DEBUGF(3, "[MEM] strdup(%s)", token.str);
      }
 
      if(lexer.data[lexer.index] == '\0'){
@@ -210,8 +213,9 @@ L_TOKEN read_token(){
 
    if(token.type == NUMBER){
       token.number = strtod(buffer, NULL);
-   }else{
+   }else if(token_size > 0){
       token.str = strdup(buffer);
+      DEBUGF(3, "[MEM] strdup(%s)", token.str);
    }
 
    if(lexer.data[lexer.index] == '\0'){

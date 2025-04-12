@@ -3,9 +3,11 @@
 #include <stdarg.h>
 
 #ifdef DEBUG_MSG
-#define DEBUGF(fmt, ...) fprintf(stderr, "[DEBUG]: "fmt"\n", __VA_ARGS__)
-#define DEBUG(msg) fprintf(stderr, "[DEBUG]: "msg"\n")
+#define DEBUGF(lvl, fmt, ...) fprintf(stderr, "[DEBUG][%s]: "fmt"\n", __func__, __VA_ARGS__)
+#define DEBUG(lvl, msg) fprintf(stderr, "[DEBUG][%s]: "msg"\n", __func__)
 #else
-#define DEBUGF(fmt, ...)
-#define DEBUG(msg)
+#define DEBUGF(lvl, fmt, ...)
+#define DEBUG(lvl, msg)
 #endif
+
+

@@ -18,6 +18,8 @@ enum token_type{
    DIV,
    MULT,
    PRINT,
+   PAREN_OPEN,
+   PAREN_CLOSE,
    EXPR_END,
    NONE
 };
@@ -47,6 +49,8 @@ L_TOKEN read_token();
 void lexer_from_file(char *file);
 
 void set_lexer(char *data);
+
+void lexer_destroy();
 
 void delete_token(L_TOKEN *token);
 

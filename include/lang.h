@@ -26,6 +26,8 @@ typedef struct _stack_val{
    BYTES_8 val;
 } STACK_VAL;
 
+int read_parse_file(char *file_name, P_TOKEN *program);
+
 int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len);
 
 void run_program(P_TOKEN *tokens, int length);
