@@ -301,8 +301,6 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             break;
       }
 
-      printf("token: %s[%d]stack size: %d\n", token_str(curr->type), op_index, stack_head);
-
       ERR:
    }
 
