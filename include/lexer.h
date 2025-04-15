@@ -4,6 +4,7 @@
 #include <cutils/list.h>
 
 enum token_type{
+   NULL_TOKEN,
    NUMBER,
    SET_NUM,
    VAR_NUM,
@@ -21,8 +22,18 @@ enum token_type{
    PAREN_OPEN,
    PAREN_CLOSE,
    EXPR_END,
+   FUNCTION,
+   END,
+   COMMA,
    NONE
 };
+
+typedef struct _func_data{
+   int num_args;
+   char **args;
+   char *name;
+   char *prefix;
+} func_data;
 
 typedef struct _token{
    enum token_type type;
@@ -31,17 +42,10 @@ typedef struct _token{
    union {
       double number;
       char *str;
+      func_data *function_data;
    };
 } L_TOKEN;
 
-struct func_data{
-   char *name;
-   int num_args;
-   union {
-      double number;
-      void *data;
-   } result;
-};
 char *token_str(enum token_type);
 
 L_TOKEN read_token();
@@ -57,3 +61,5 @@ void delete_token(L_TOKEN *token);
 int lexer_is_empty();
 
 int end_of_token();
+
+char *function_var_name(func_data *function, char *var);

@@ -4,11 +4,13 @@
 #include <lexer.h>
 #include <cutils/list.h>
 
+#define MAX_TOKENS 1024
+
 typedef struct _p_token{
    enum token_type type;
    union {
       double number;
-      struct func_data *funcion;
+      func_data *function;
       char *str;
       char *name;
    };
@@ -33,3 +35,6 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len);
 void run_program(P_TOKEN *tokens, int length);
 
 P_TOKEN conv_token(L_TOKEN *token);
+
+// void save_program(P_TOKEN *tokens, int length, char *file_name);
+// void load_program(P_TOKEN *tokens, int length, char *file_name);

@@ -28,8 +28,15 @@ char *token_str(enum token_type type){
       case NONE: return "NONE";
       case PAREN_OPEN: return "PAREN_OPEN";
       case PAREN_CLOSE: return "PAREN_CLOSE";
+      case FUNCTION: return "FUNCTION";
       default: return "NULL";
    };
+}
+
+char *function_var_name(func_data *function, char *var){
+   (void) function;
+   (void) var;
+   return NULL;
 }
 
 int is_number(char *str){
@@ -72,6 +79,12 @@ enum token_type get_token_type(char *str){
       type = SET;
    }else if(strcmp(str, ";") == 0){
       type = EXPR_END;
+   }else if(strcmp(str, "end") == 0){
+      type = END;
+   }else if(strcmp(str, ",") == 0){
+      type = COMMA;
+   }else if(strcmp(str, "func") == 0){
+      type = FUNCTION;
    }else if(is_number(str)){
       type = NUMBER;
    }
@@ -141,6 +154,7 @@ int end_of_token(){
     || strncmp(curr, "/", 1) == 0
     || strncmp(curr, ";", 1) == 0 
     || strncmp(curr, "(", 1) == 0
+    || strncmp(curr, ",", 1) == 0
     || strncmp(curr, ")", 1) == 0){
       end = 1;
       lexer.found_next = 1;

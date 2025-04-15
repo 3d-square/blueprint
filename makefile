@@ -5,17 +5,17 @@ RPATH=-Wl,-rpath,$(HOME)/cutils/bin/
 CFLAGS=-Wall -Wextra
 DEFS=
 SRCS=src/main.c src/flow.c src/utils.c src/panel.c src/globals.c src/prints.c src/ui.c src/directory_info.c src/filewin.c
-
-DEFS +=-DDEBUG_MSG
+LANG_SRCS=src/parser.c src/lang.c src/interpreter.c src/lexer.c
 
 all: ctrlf lang
 
 ctrlf: $(SRCS)
 	gcc $(CFLAGS) $(INC) $(LPATH) $(DEFS) $(RPATH) $(SRCS) -o ctrlf $(LIBS)
 
-lang: src/lang.c src/lexer.c
+lang: $(LANG_SRCS)
 	@echo $(DEFS)
-	gcc $(CFLAGS) $(INC) $(LPATH) $(DEFS) $(RPATH) src/lang.c src/lexer.c -o lang  $(LIBS)
+	gcc $(CFLAGS) $(INC) $(LPATH) $(DEFS) -DDEBUG_MSG $(RPATH) $(LANG_SRCS) -o lang-debug  $(LIBS)
+	gcc $(CFLAGS) $(INC) $(LPATH) $(DEFS) $(RPATH) $(LANG_SRCS) -o lang  $(LIBS)
 
 clean:
 	rm lang
