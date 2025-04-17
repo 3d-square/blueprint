@@ -52,8 +52,10 @@ char *token_str(enum token_type type){
       case MINUS: return "MINUS";
       case DIV: return "DIV";
       case MULT: return "MULT";
+      case END: return "END";
       case NONE: return "NONE";
       case CALL: return "CALL";
+      case COMMA: return "COMMA";
       case PAREN_OPEN: return "PAREN_OPEN";
       case PAREN_CLOSE: return "PAREN_CLOSE";
       case FUNCTION: return "FUNCTION";

@@ -31,6 +31,11 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
       L_TOKEN *curr = &tokens[ op_index];
       switch(curr->type){
          case NUMBER:{
+            if(last_was_op == 0){
+               token_error("Expected operand instead got number", curr);
+               error_status = 1;
+               break;
+            }
             stack_size++;
             program[*exe_len] = conv_token(curr);
             ++(*exe_len);
@@ -147,6 +152,12 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                break;
             }
 
+            if(last_was_op){
+               token_errorf("Expected value instead got %s\n", curr, token_str(tokens[op_index - 1].type));
+               error_status = 1;
+               break;
+            }
+
             DEBUGF(3, "[MEM] free(%s)", curr->str);
             free(curr->str);
 
@@ -168,6 +179,12 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
          case COMMA:
             if(stack_size == 0){
                token_error("Comma in function call expects an expression before it", curr);
+               error_status = 1;
+               break;
+            }
+
+            if(last_was_op){
+               token_errorf("Expected value instead got %s", curr, token_str(tokens[op_index - 1].type));
                error_status = 1;
                break;
             }
@@ -212,6 +229,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                program[*exe_len].type = VAR_NUM;
                ++(*exe_len);
                stack_size++;
+               last_was_op = 0;
             }else if(id == FUNCTION){
                char *function_name = use_prefix ? buffer : curr->str;
                func_data *func_info = (func_data *)map_get(functions, function_name);
@@ -276,17 +294,23 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                tokens[op_index + j].str = strdup(function_name);
                free(curr->str);
                op_index += 1;
+               last_was_op = 1;
             }else{
                printf("%d\n", id);
                token_errorf("ID: Have not implemented id of type %s", curr, token_str(id));
                error_status = 1;
             }
 
-            last_was_op = 0;
          } break;
          case CALL: {
             if(stack_size == 0){
                token_error("Closing of function call expects an expression before it", curr);
+               error_status = 1;
+               break;
+            }
+
+            if(last_was_op){
+               token_errorf("Expected value instead got %s\n", curr ,token_str(tokens[op_index - 1].type));
                error_status = 1;
                break;
             }
@@ -415,7 +439,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             exit(1);
             break;
       }
-      token_errorf("%s", curr, token_str(curr->type));
+      token_errorf("%s last_was_op = %d", curr, token_str(curr->type), last_was_op);
       ERR:
    }
 
