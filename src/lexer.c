@@ -1,4 +1,3 @@
-#include "lang.h"
 #include <cutils/map.h>
 #include <cutils/list.h>
 #include <stdio.h>
@@ -7,7 +6,7 @@
 #include <ctype.h>
 #include <debug.h>
 #include <stdarg.h>
-#include <lexer.h>
+#include <language.h>
 
 void *assert_alloc(size_t);
 

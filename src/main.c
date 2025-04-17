@@ -4,13 +4,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
-#include "flow.h"
 #include "cutils.h"
-#include "prints.h"
-#include "panel.h"
-#include "globals.h"
 #include "ui.h"
-#include "filewin.h"
+#include "application.h"
 
 #define DEBUGF(fmt, ...) printf("[DEBUG]: " fmt, __VA_ARGS__)
 #define DEBUG(f) printf("[DEBUG]: " f "\n")

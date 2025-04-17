@@ -1,5 +1,5 @@
 #include "utils.h"
-#include "globals.h"
+#include "application.h"
 #include "stdio.h"
 #include <string.h>
 #include <stdlib.h>

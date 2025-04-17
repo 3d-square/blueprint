@@ -1,4 +1,3 @@
-#include "directory_info.h"
 #include <string.h>
 #include <dirent.h>
 #include <unistd.h>
@@ -8,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <assert.h>
+#include "application.h"
 
 char *ftype_str(F_TYPE type){
    switch(type){

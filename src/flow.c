@@ -3,9 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "flow.h"
 #include "cutils.h"
-#include "globals.h"
+#include "application.h"
 
 int font_size = 10;
 

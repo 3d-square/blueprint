@@ -1,4 +1,3 @@
-#include "lang.h"
 #include <cutils/map.h>
 #include <cutils/list.h>
 #include <stdio.h>
@@ -6,7 +5,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <debug.h>
-#include <lexer.h>
+#include <language.h>
 
 char *get_unique_id(int id, char *id_name);
 void token_free(P_TOKEN *token);

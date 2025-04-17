@@ -1,5 +1,5 @@
-#include "globals.h"
 #include "raylib.h"
+#include "application.h"
 #include "cutils.h"
 #include "ui.h"
 #include <assert.h>

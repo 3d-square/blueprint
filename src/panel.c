@@ -1,11 +1,9 @@
 #include "raylib.h"
-#include "flow.h"
-#include "panel.h"
 #include "cutils.h"
 #include "ui.h"
+#include "application.h"
 #include <string.h>
 #include <stdio.h>
-#include "globals.h"
 
 #define MAXCOORDLEN 9
 

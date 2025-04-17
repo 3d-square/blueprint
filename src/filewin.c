@@ -1,10 +1,6 @@
 #include "raylib.h"
 #include "ui.h"
-#include "filewin.h"
-#include "directory_info.h"
-#include "prints.h"
-#include "globals.h"
-#include "panel.h"
+#include "application.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>

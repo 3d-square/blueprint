@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "flow.h"
-#include "prints.h"
-#include "globals.h"
 #include "cutils.h"
+#include "application.h"
 #include <string.h>
 #include <assert.h>
 
