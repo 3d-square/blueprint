@@ -25,10 +25,13 @@ enum token_type{
    FUNCTION,
    END,
    COMMA,
+   CALL,
    NONE
 };
 
 typedef struct _func_data{
+   int start;
+   int end;
    int num_args;
    char **args;
    char *name;
@@ -45,6 +48,11 @@ typedef struct _token{
       func_data *function_data;
    };
 } L_TOKEN;
+
+#define token_errorf(fmt, tkn, ...) fprintf(stderr, "[%d:%d]: " fmt "\n", tkn->line, tkn->col, __VA_ARGS__)
+#define token_error(fmt, tkn) fprintf(stderr, "[%d:%d]: " fmt "\n", tkn->line, tkn->col)
+
+char *function_as_str(func_data *function);
 
 char *token_str(enum token_type);
 

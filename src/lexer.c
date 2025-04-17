@@ -6,9 +6,36 @@
 #include <string.h>
 #include <ctype.h>
 #include <debug.h>
+#include <stdarg.h>
 #include <lexer.h>
 
 void *assert_alloc(size_t);
+
+char *scatf(char *dest, const char *fmt, ...){
+   va_list args;
+   char buffer[1024];
+
+   va_start(args, fmt);
+   vsprintf(buffer, fmt, args);
+   va_end(args);
+
+   strcat(dest, buffer);
+   return dest;
+}
+
+char *function_as_str(func_data *function){
+   static char fbuffer[1024];
+   fbuffer[0] = '\0';
+   scatf(fbuffer, "%s[%d]s: %d, e: %d(\n", function->name, function->num_args, function->start, function->end);
+   
+   for(int i = 0; i < function->num_args; ++i){
+      scatf(fbuffer, "  %s\n", function->args[i]);
+   }
+
+   scatf(fbuffer, ");");
+
+   return fbuffer;
+}
 
 char *token_str(enum token_type type){
    switch(type){
@@ -26,6 +53,7 @@ char *token_str(enum token_type type){
       case DIV: return "DIV";
       case MULT: return "MULT";
       case NONE: return "NONE";
+      case CALL: return "CALL";
       case PAREN_OPEN: return "PAREN_OPEN";
       case PAREN_CLOSE: return "PAREN_CLOSE";
       case FUNCTION: return "FUNCTION";

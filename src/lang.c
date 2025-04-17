@@ -21,6 +21,9 @@ int main(int argc, char **argv){
       printf("Running file: %s\n", argv[i]);
       if((size = read_parse_file(argv[i], program)) != -1){
          run_program(program, size);
+      }else{
+         fprintf(stderr, "Parses exited with errors\n");
+         return 1;
       }
    }
 

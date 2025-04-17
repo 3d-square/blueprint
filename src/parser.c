@@ -15,6 +15,7 @@ P_TOKEN conv_token(L_TOKEN *token);
 void *assert_alloc(size_t size);
 
 int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
+   printf("program_size = %d\n", length);
    int stack_size = 0;  
    int error_status = 0;
    int stack_head = 0;
@@ -25,6 +26,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
    int last_was_op = 1;
    *exe_len = 0;
    map symbols = map_create(NULL);
+   map functions = map_create(NULL);
    for(int op_index = 0; op_index < length && !error_status; ++op_index){
       L_TOKEN *curr = &tokens[ op_index];
       switch(curr->type){
@@ -39,12 +41,12 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
          case MULT:
          case DIV:{
             if(op_index < length - 1 && tokens[op_index + 1].type == EXPR_END){
-               fprintf(stderr, "Operand %s expects NUMBER or ID but got EXPR_END ';'\n", token_str(curr->type));
+               token_errorf("Operand %s expects NUMBER or ID but got EXPR_END ';'", curr, token_str(curr->type));
                error_status = 1;
                break;
             }
             if(last_was_op){
-               fprintf(stderr, "Two adjacent operands found at [%d:%d]\n", curr->line, curr->col);
+               token_error("Two adjacent operands found", curr);
                error_status = 1;
                break;
             }
@@ -62,7 +64,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
          }break;
          case PRINT:{
             if(stack_size < 1){
-               fprintf(stderr, "Problem parsing token %s at [%d:%d]\n", token_str(curr->type), curr->line, curr->col);
+               token_errorf("Problem parsing token %s\n", curr, token_str(curr->type));
                error_status = 1;
                break;
             }
@@ -80,7 +82,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }
 
             if(expr_size < 1){
-               fprintf(stderr, "'(' at [%d:%d] does not have a corresponding ')'\n", curr->line, curr->col);
+               token_error("'(' does not have a corresponding ')'", curr);
                error_status = 1;
                break;
             }
@@ -89,13 +91,13 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
          }break;
          case SET:{
             if(op_index + 2 >= length){
-               fprintf(stderr, "%d:%d set expects variable name and ';'\n", curr->line, curr->col);
+               token_error("Set expects variable name and ';'\n", curr);
                error_status = 1;
                break;
             }
             L_TOKEN *name = &tokens[++op_index];
             if(name->type != ID){
-               fprintf(stderr, "%d:%d set expects ID but got type %s\n", name->line, name->col, token_str(name->type));
+               token_errorf("Set expects ID but got type %s\n", name, token_str(name->type));
                error_status = 1;
                break;
             }
@@ -105,7 +107,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                if(tokens[next_idx].type == ID && strcmp(name->str, tokens[next_idx].str) == 0){
                   L_TOKEN *self_rec = (L_TOKEN *)map_get(symbols, name->str);
                   if(self_rec == NULL){
-                     fprintf(stderr, "Initial definition of '%s' at [%d:%d] is recursive\n", name->str, name->line, name->col);
+                     token_errorf("Initial definition of '%s' is recursive", name, name->str);
                      error_status = 1;
                      goto ERR;
                   }
@@ -114,7 +116,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }
 
             if(next_idx == length){
-               fprintf(stderr, "%d:%d set '%s' ran into EOF while looking for ';'\n", curr->line, curr->col, name->str);
+               token_errorf("set '%s' ran into EOF while looking for ';'", curr, name->str);
                error_status = 1;
                break;
             }
@@ -140,7 +142,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
          }break;
          case EXPR_END:{
             if(stack_head == 0){
-               fprintf(stderr, "';' Expects an expression before it\n");
+               token_error("';' Expects an expression before it", curr);
                error_status = 1;
                break;
             }
@@ -163,9 +165,31 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }
             last_was_op = 1;
          }break;
+         case COMMA:
+            if(stack_size == 0){
+               token_error("Comma in function call expects an expression before it", curr);
+               error_status = 1;
+               break;
+            }
+
+            DEBUGF(3, "[MEM] free(%s)", curr->str);
+            free(curr->str);
+
+            while(expr_size){
+               if(expression_stack[expr_size - 1].type == NULL_TOKEN){
+                  break;
+               }
+               program[*exe_len] = expression_stack[expr_size - 1];
+               ++(*exe_len);
+               expr_size--;
+            }
+
+            last_was_op = 1;
+         break;
          case ID:{
             char buffer[256];
             enum token_type id = NULL_TOKEN;
+            int use_prefix = 0;
             sprintf(buffer, "%s_%s", get_function_prefix(stack, stack_head, in_function, ""), curr->str);
 
             id = (enum token_type)map_get(symbols, buffer);
@@ -174,10 +198,11 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }else{ // variable is a function variable
                free(curr->str);
                curr->str = strdup(buffer);
+               use_prefix = 1;
             }
-            
+
             if(id == NULL_TOKEN){
-               fprintf(stderr, "ID: symbol[%s] is neither function nor variable\n", curr->str);
+               token_errorf("ID: symbol[%s] is neither function nor variable", curr, curr->str);
                error_status = 1;
                break;
             }
@@ -187,29 +212,115 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                program[*exe_len].type = VAR_NUM;
                ++(*exe_len);
                stack_size++;
+            }else if(id == FUNCTION){
+               char *function_name = use_prefix ? buffer : curr->str;
+               func_data *func_info = (func_data *)map_get(functions, function_name);
+               if(func_info == NULL){
+                  token_error("Unable to get function information", curr);
+                  error_status = 1;
+                  break;
+               }
+               if(op_index + 2 >= length){
+                  token_errorf("While parsing call function %s ran into EOF", curr, curr->str);
+                  error_status = 1;
+                  break;
+               }
+               if(tokens[op_index + 1].type != PAREN_OPEN){
+                  token_error("Function call expects '('", curr);
+                  error_status = 1;
+                  break;
+               }
+
+               int args = 1;
+               int nested_paren = 0;
+               int p_o = 1;
+               int p_c = 0;
+               int j;
+               for(j = 2; j + op_index < length; ++j){
+                  if(tokens[op_index + j].type == PAREN_CLOSE){
+                     // Look for the closing parenthese
+                     nested_paren--;
+                     p_c++;
+                     if(nested_paren < 0){
+                        break;
+                     }
+                  }else if(tokens[op_index + j].type == PAREN_OPEN){
+                     nested_paren++;
+                     p_o++;
+                  }else if(tokens[op_index + j].type == COMMA){
+                     args++;
+                  }
+               }
+
+               if(p_o != p_c){
+                  printf("%d:%d\n", p_o, p_c);
+                  token_error("Parenthese missmatch in function call", curr);
+                  error_status = 1;
+                  break;
+               }
+         
+               if(j == 2){
+                  args = 0;
+               }
+
+               if(args != func_info->num_args){
+                  token_errorf("%s expected %d arguments but got %d arguments", curr, curr->str, func_info->num_args, args);
+                  error_status = 1;
+                  break;
+               }
+               expression_stack[expr_size++] = (P_TOKEN){
+                  .type = NULL_TOKEN,
+               };
+
+               tokens[op_index + j].type = CALL;
+               tokens[op_index + j].str = strdup(function_name);
+               free(curr->str);
+               op_index += 1;
             }else{
-               fprintf(stderr, "ID: Have not implemented id of type %s\n", token_str(id));
+               printf("%d\n", id);
+               token_errorf("ID: Have not implemented id of type %s", curr, token_str(id));
                error_status = 1;
             }
 
             last_was_op = 0;
          } break;
+         case CALL: {
+            if(stack_size == 0){
+               token_error("Closing of function call expects an expression before it", curr);
+               error_status = 1;
+               break;
+            }
+
+            while(expr_size){
+               program[*exe_len] = expression_stack[expr_size - 1];
+               ++(*exe_len);
+               expr_size--;
+               if(expression_stack[expr_size - 1].type == NULL_TOKEN){
+                  break;
+               }
+            }
+
+            last_was_op = 1;
+     
+            printf("Successfully parsed function call '%s'\n", curr->str);
+            exit(1);
+         } break;
          case FUNCTION:{
             if(op_index + 6 >= length){
-               fprintf(stderr, "[%d:%d]: Incomplete function definiiton: function definition is required to use the following format\n"
+               token_error("Incomplete function definiiton: function definition is required to use the following format\n"
                                "  func function_name(var1, ..., varN)\n"
                                "    ...\n"
-                               "  end\n", curr->line, curr->col);
+                               "  end", curr);
                error_status = 1;
                break;
             }
 
             L_TOKEN *func = &tokens[op_index + 1];
             if(func->type != ID || tokens[op_index + 2].type != PAREN_OPEN){
-               fprintf(stderr, "[%d:%d]: Function definition is required to use the following format\n"
+               token_error("Function definition is required to use the following format\n"
                                "  func function_name(var1, ..., varN)\n"
                                "    ...\n"
-                               "  end\n", curr->line, curr->col);
+                               "  end", curr);
                error_status = 1;
                break;
             }
@@ -221,18 +332,18 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             char *function_name = func->str;
             char *prefix = strdup(get_function_prefix(stack, stack_head, in_function, function_name));
 
-            for(j = op_index + 3; j < length - 1; j += 2){
-               L_TOKEN *var = &tokens[j];
-               L_TOKEN *next = &tokens[j + 1];
+            for(j = 3; op_index + j < length - 1; j += 2){
+               L_TOKEN *var = &tokens[j + op_index];
+               L_TOKEN *next = &tokens[j + op_index + 1];
 
                if(var->type != ID){
-                  fprintf(stderr, "[%d:%d]: Function definition expects ID not %s\n", var->line, var->col, token_str(var->type));
+                  token_errorf("Function definition expects ID not %s", var, token_str(var->type));
                   error_status = 1;
                   goto ERR;
                }
                var->type = SET_NUM;
                sprintf(arg_name_buffer, "%s_%s", prefix, var->str);
-               arg_names[num_args++] = arg_name_buffer;
+               arg_names[num_args++] = strdup(arg_name_buffer);
                map_put(symbols, arg_name_buffer, (void *)SET_NUM);
                if(next->type == COMMA){
                   // There will be more variables
@@ -242,14 +353,14 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                   free(next->str);
                   break;
                }else{
-                  fprintf(stderr, "[%d:%d]: Function definition expects ID not %s\n", next->line, next->col, token_str(var->type));
+                  token_errorf("Function definition expects ID not %s", next, token_str(var->type));
                   error_status = 1;
                   goto ERR;
                }
             }
 
-            if(j >= length){
-               fprintf(stderr, "Ran into End Of File while parsing function\n");
+            if(j + op_index >= length){
+               token_error("Ran into End Of File while parsing function", curr);
                error_status = 1;
                break;
             }
@@ -266,9 +377,12 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                function_data->args[k] = arg_names[k];
             }
 
+            function_data->start = *exe_len;
+
             func->function_data = function_data;
 
-            map_put(symbols, function_name, func);
+            map_put(symbols, function_name, (void *)FUNCTION);
+            map_put(functions, function_name, function_data);
 
             func->type = FUNCTION;
             P_TOKEN func_header = conv_token(func);
@@ -280,27 +394,28 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
          } break;
          case END: {
             if(stack_head <= 0){
-               fprintf(stderr, "[%d:%d]: end expects function definition\n", curr->line, curr->col);
+               token_error("END expects function definition", curr);
                error_status = 1;
                break;
             }
             P_TOKEN func = stack[--stack_head];
             if(func.type != FUNCTION){
-               fprintf(stderr, "[%d:%d]: Function ended in the middle of another statement. Got type %s\n", curr->line, curr->col, token_str(func.type));
+               token_errorf("Function ended in the middle of another statement. Got type %s", curr, token_str(func.type));
                error_status = 1;
                break;
             }
             in_function--;
+            func.function->end = *exe_len - 1;
             for(int j = 0; j < func.function->num_args; ++j){
                map_delete_key(symbols, func.function->args[j]);
             }
          } break;
          default:
-            fprintf(stderr, "[%d:%d]: Cannot parse %s\n", curr->line, curr->col, token_str(curr->type));
+            token_errorf("Cannot parse %s", curr, token_str(curr->type));
             exit(1);
             break;
       }
-
+      token_errorf("%s", curr, token_str(curr->type));
       ERR:
    }
 
@@ -321,7 +436,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
    // }
 
    map_destroy(symbols);
-   exit(1);
+   map_destroy(functions);
    return error_status;
 }
 
@@ -376,6 +491,7 @@ int token_prec(enum token_type type){
       case MULT:
       case DIV:
          return 2;
+      case NULL_TOKEN:
       case PAREN_OPEN:
          return -1;
 
@@ -408,6 +524,7 @@ P_TOKEN conv_token(L_TOKEN *token){
          new_token.number = token->number;
       break;
       case SET_NUM:
+      case CALL:
       case ID:
          new_token.name = token->str;
       break;
@@ -415,7 +532,7 @@ P_TOKEN conv_token(L_TOKEN *token){
          new_token.function = token->function_data;
       break;
       default:
-         fprintf(stderr, "%s token conversion is not implemented yet\n", token_str(token->type));
+         token_errorf("%s token conversion is not implemented yet\n", token, token_str(token->type));
          exit(1);
       break;
       

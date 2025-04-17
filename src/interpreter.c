@@ -21,8 +21,8 @@ void run_program(P_TOKEN *tokens, int length){
    char *variable_name;
    map env = map_create(NULL);
 
-   for(int i = 0; i < length; ++i){
-      P_TOKEN *curr = &tokens[i];
+   for(int op_index = 0; op_index < length; ++op_index){
+      P_TOKEN *curr = &tokens[op_index];
       switch(curr->type){
          case STRING:{
             fprintf(stderr, "Strings are not implemented\n");
@@ -84,7 +84,7 @@ void run_program(P_TOKEN *tokens, int length){
             stack_head--;
          }break;
          case VAR_NUM:{
-            variable_name = get_unique_id(id, tokens[i].name);
+            variable_name = get_unique_id(id, tokens[op_index].name);
             number = p2d(map_get(env, variable_name));
 
             stack[stack_head++] = (STACK_VAL){
@@ -97,13 +97,16 @@ void run_program(P_TOKEN *tokens, int length){
             DEBUGF(2, "[OP] %s is %f", variable_name, number);
          }break;
          case SET_NUM:{
-            variable_name = get_unique_id(id, tokens[i].name);
+            variable_name = get_unique_id(id, tokens[op_index].name);
             number = stack[stack_head - 1].val.number;
 
             map_put(env, variable_name, d2p(number));
             DEBUGF(2, "[OP] set %s = %f", variable_name, number);
             stack_head--;
          }break;
+         case FUNCTION: {
+            op_index = curr->function->end;
+         } break;
          default:
             fprintf(stderr, "Implement token %s\n", token_str(curr->type));
             exit(1);
@@ -117,11 +120,9 @@ void run_program(P_TOKEN *tokens, int length){
    }
 }
 
-static char _unique_id[256];
-
 char *get_unique_id(int id, char *id_name){
+   static char _unique_id[256];
    sprintf(_unique_id, "%d_%s", id, id_name);
-
    return _unique_id;
 }
 
