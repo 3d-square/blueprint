@@ -29,7 +29,7 @@ int main(int argc, char **argv){
    return 0;
 }
 
-int read_parse_file(char *file_name, P_TOKEN *program){
+int read_parse_file(const char *file_name, P_TOKEN *program){
    L_TOKEN tokens[MAX_TOKENS];
    int index = 0;
    int program_size = 0;

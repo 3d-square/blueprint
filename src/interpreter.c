@@ -106,11 +106,15 @@ void run_program(P_TOKEN *tokens, int length){
          case FUNCTION: {
             op_index = curr->function->end;
          } break;
+         case CALL: {
+            const func_data *func_info = curr->function;
+            // printf("%s\n\n", function_as_str(func_info));
+         } break;
          default:
-            fprintf(stderr, "Implement token %s\n", token_str(curr->type));
+            fprintf(stderr, "%d: Implement token %s[%d]\n", op_index, token_str(curr->type), curr->type);
             exit(1);
       }
-      DEBUGF(2, "[PROGRAM] stack_size = %d", stack_head);
+      printf("%s\n", token_str(curr->type));
    }
    map_destroy(env);
 
@@ -129,6 +133,14 @@ void token_free(P_TOKEN *token){
    if(token->type == ID || token->type == VAR_NUM || token->type == VAR_STR || token->type == SET_STR || token->type == SET_NUM){
       DEBUGF(3, "[MEM] free(%s)", token->str);
       free(token->str);
+   }else if(token->type == CALL){
+      for(int i = 0; i < token->function->num_args; ++i){
+         free(token->function->args[i]);
+      }
+      free(token->function->prefix);
+      free(token->function->name);
+      free(token->function->args);
+      free(token->function);
    }
 }
 

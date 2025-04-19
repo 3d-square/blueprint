@@ -22,7 +22,7 @@ char *scatf(char *dest, const char *fmt, ...){
    return dest;
 }
 
-char *function_as_str(func_data *function){
+char *function_as_str(const func_data *function){
    static char fbuffer[1024];
    fbuffer[0] = '\0';
    scatf(fbuffer, "%s[%d]s: %d, e: %d(\n", function->name, function->num_args, function->start, function->end);
@@ -62,7 +62,7 @@ char *token_str(enum token_type type){
    };
 }
 
-char *function_var_name(func_data *function, char *var){
+char *function_var_name(const func_data *function, const char *var){
    (void) function;
    (void) var;
    return NULL;
@@ -131,7 +131,7 @@ struct lexer{
    int found_next;
 } lexer;
 
-void lexer_from_file(char *file){
+void lexer_from_file(const char *file){
    long size = 0;
    FILE *fp = fopen(file, "r");
    if(fp == NULL){

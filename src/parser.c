@@ -5,16 +5,14 @@
 #include <string.h>
 #include <ctype.h>
 #include <debug.h>
+#include <time.h>
 #include <language.h>
-
-char *get_function_prefix(P_TOKEN stack[], int size, int nested, char *curr);
-int token_prec(enum token_type type);
-P_TOKEN conv_token(L_TOKEN *token);
 
 void *assert_alloc(size_t size);
 
+char *get_random_str(int size);
+
 int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
-   printf("program_size = %d\n", length);
    int stack_size = 0;  
    int error_status = 0;
    int stack_head = 0;
@@ -26,6 +24,8 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
    *exe_len = 0;
    map symbols = map_create(NULL);
    map functions = map_create(NULL);
+   srand(142);
+
    for(int op_index = 0; op_index < length && !error_status; ++op_index){
       L_TOKEN *curr = &tokens[ op_index];
       switch(curr->type){
@@ -58,9 +58,8 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
 
             // Pop all expressions from stack and add to program
             while(expr_size && token_prec(curr->type) <= token_prec(expression_stack[expr_size - 1].type)){
-               program[*exe_len] = expression_stack[expr_size - 1];
+               program[*exe_len] = expression_stack[--expr_size];
                ++(*exe_len);
-               expr_size--;
             }
 
             expression_stack[expr_size++] = conv_token(curr);
@@ -161,9 +160,8 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             free(curr->str);
 
             while(expr_size){
-               program[*exe_len] = expression_stack[expr_size - 1];
+               program[*exe_len] = expression_stack[--expr_size];
                ++(*exe_len);
-               expr_size--;
             }
 
             program[*exe_len] = stack[stack_head - 1];
@@ -195,9 +193,8 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                if(expression_stack[expr_size - 1].type == NULL_TOKEN){
                   break;
                }
-               program[*exe_len] = expression_stack[expr_size - 1];
+               program[*exe_len] = expression_stack[--expr_size];
                ++(*exe_len);
-               expr_size--;
             }
 
             last_was_op = 1;
@@ -205,7 +202,6 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
          case ID:{
             char buffer[256];
             enum token_type id = NULL_TOKEN;
-            int use_prefix = 0;
             sprintf(buffer, "%s_%s", get_function_prefix(stack, stack_head, in_function, ""), curr->str);
 
             id = (enum token_type)map_get(symbols, buffer);
@@ -214,7 +210,6 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }else{ // variable is a function variable
                free(curr->str);
                curr->str = strdup(buffer);
-               use_prefix = 1;
             }
 
             if(id == NULL_TOKEN){
@@ -230,7 +225,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                stack_size++;
                last_was_op = 0;
             }else if(id == FUNCTION){
-               char *function_name = use_prefix ? buffer : curr->str;
+               char *function_name = curr->str;
                func_data *func_info = (func_data *)map_get(functions, function_name);
                if(func_info == NULL){
                   token_error("Unable to get function information", curr);
@@ -247,7 +242,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                   error_status = 1;
                   break;
                }
-
+               free(tokens[op_index + 1].str);
                int args = 1;
                int nested_paren = 0;
                int p_o = 1;
@@ -259,6 +254,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                      nested_paren--;
                      p_c++;
                      if(nested_paren < 0){
+                        free(tokens[op_index + j].str);
                         break;
                      }
                   }else if(tokens[op_index + j].type == PAREN_OPEN){
@@ -315,18 +311,23 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }
 
             while(expr_size){
-               program[*exe_len] = expression_stack[expr_size - 1];
-               ++(*exe_len);
-               expr_size--;
                if(expression_stack[expr_size - 1].type == NULL_TOKEN){
                   break;
                }
+
+               program[*exe_len] = expression_stack[--expr_size];
+               ++(*exe_len);
             }
 
             last_was_op = 1;
      
-            printf("Successfully parsed function call '%s'\n", curr->str);
-            exit(1);
+            P_TOKEN ptkn = conv_token(curr);
+            char *function_name = ptkn.name;
+            ptkn.function = (func_data *)map_get(functions, ptkn.name);
+            free(function_name);
+      
+            program[*exe_len] = ptkn;
+            ++(*exe_len);
          } break;
          case FUNCTION:{
             if(op_index + 6 >= length){
@@ -347,7 +348,8 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                error_status = 1;
                break;
             }
-
+            free(curr->str);
+            free(tokens[op_index + 2].str);
             int j;
             int num_args = 0;
             char *arg_names[25];
@@ -366,6 +368,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                }
                var->type = SET_NUM;
                sprintf(arg_name_buffer, "%s_%s", prefix, var->str);
+               free(var->str);
                arg_names[num_args++] = strdup(arg_name_buffer);
                map_put(symbols, arg_name_buffer, (void *)SET_NUM);
                if(next->type == COMMA){
@@ -409,6 +412,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
 
             func->type = FUNCTION;
             P_TOKEN func_header = conv_token(func);
+            func_header.function = function_data;
             stack[stack_head++] = func_header;
             program[*exe_len] = func_header;
             ++(*exe_len);
@@ -427,6 +431,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                error_status = 1;
                break;
             }
+            free(curr->str);
             in_function--;
             func.function->end = *exe_len - 1;
             for(int j = 0; j < func.function->num_args; ++j){
@@ -438,7 +443,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             exit(1);
             break;
       }
-      token_errorf("%s last_was_op = %d", curr, token_str(curr->type), last_was_op);
+      // token_errorf("%s last_was_op = %d", curr, token_str(curr->type), last_was_op);
       ERR:
    }
 
@@ -564,4 +569,20 @@ P_TOKEN conv_token(L_TOKEN *token){
    return new_token;
 }
 
+char *get_random_str(int size){
+   static char buffer[256];
+   if(size < 1 || size > 255){
+      return "";
+   }
 
+   int num;
+
+   for(int i = 0; i < size; ++i){
+      num = rand() % 26;
+      buffer[i] = 'A' + num;
+   }
+
+   buffer[size] = '\0';
+
+   return buffer;
+}
