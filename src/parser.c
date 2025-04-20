@@ -140,7 +140,6 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
    
             stack_head++;
 
-            DEBUGF(3, "[MEM] free(%s)", curr->str);
             free(curr->str);
          }break;
          case EXPR_END:{
@@ -156,7 +155,6 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                break;
             }
 
-            DEBUGF(3, "[MEM] free(%s)", curr->str);
             free(curr->str);
 
             while(expr_size){
@@ -164,11 +162,10 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                ++(*exe_len);
             }
 
-            program[*exe_len] = stack[stack_head - 1];
-
-            ++(*exe_len);
-
             if(stack[stack_head - 1].type == SET_NUM){
+               program[*exe_len] = stack[stack_head - 1];
+               ++(*exe_len);
+
                stack_head--;
             }
             last_was_op = 1;
@@ -186,7 +183,6 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                break;
             }
 
-            DEBUGF(3, "[MEM] free(%s)", curr->str);
             free(curr->str);
 
             while(expr_size){
@@ -266,7 +262,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                }
 
                if(p_o != p_c){
-                  printf("%d:%d\n", p_o, p_c);
+                  // printf("%d:%d\n", p_o, p_c);
                   token_error("Parenthese missmatch in function call", curr);
                   error_status = 1;
                   break;
@@ -281,9 +277,10 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                   error_status = 1;
                   break;
                }
-               expression_stack[expr_size++] = (P_TOKEN){
-                  .type = NULL_TOKEN,
-               };
+               // Does removing this do anything
+               //expression_stack[expr_size++] = (P_TOKEN){
+               //   .type = NULL_TOKEN,
+               //};
 
                tokens[op_index + j].type = CALL;
                tokens[op_index + j].str = strdup(function_name);
@@ -291,7 +288,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                op_index += 1;
                last_was_op = 1;
             }else{
-               printf("%d\n", id);
+               // printf("%d\n", id);
                token_errorf("ID: Have not implemented id of type %s", curr, token_str(id));
                error_status = 1;
             }
@@ -325,15 +322,17 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             char *function_name = ptkn.name;
             ptkn.function = (func_data *)map_get(functions, ptkn.name);
             free(function_name);
-      
+            stack_size++;     
+            last_was_op = 0;
             program[*exe_len] = ptkn;
             ++(*exe_len);
          } break;
          case FUNCTION:{
-            if(op_index + 6 >= length){
+            if(op_index + 7 >= length){
                token_error("Incomplete function definiiton: function definition is required to use the following format\n"
                                "  func function_name(var1, ..., varN)\n"
                                "    ...\n"
+                               "    return\n"
                                "  end", curr);
                error_status = 1;
                break;
@@ -344,6 +343,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                token_error("Function definition is required to use the following format\n"
                                "  func function_name(var1, ..., varN)\n"
                                "    ...\n"
+                               "    return\n"
                                "  end", curr);
                error_status = 1;
                break;
@@ -385,7 +385,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                }
             }
 
-            if(j + op_index >= length){
+            if(j + op_index + 1 >= length){
                token_error("Ran into End Of File while parsing function", curr);
                error_status = 1;
                break;
@@ -419,9 +419,24 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
 
             op_index += j + 1;
          } break;
+         case RETURN: {
+            if(stack_size < 1){
+               token_error("return needs a value\n", curr);
+               error_status = 1;
+               break;
+            }
+
+            program[*exe_len] = conv_token(curr);
+            ++(*exe_len);
+         } break;
          case END: {
             if(stack_head <= 0){
                token_error("END expects function definition", curr);
+               error_status = 1;
+               break;
+            }
+            if(op_index <= 0 || tokens[op_index - 1].type != RETURN){
+               token_error("Last directive in function is ALWAYS return", &tokens[op_index - 1]);
                error_status = 1;
                break;
             }
@@ -543,6 +558,7 @@ P_TOKEN conv_token(L_TOKEN *token){
       case SET:
       case EXPR_END:
       case PRINT:
+      case RETURN:
       case PAREN_OPEN:
       case PAREN_CLOSE:
          DEBUGF(3, "[MEM] free(%s)", token->str);
@@ -565,7 +581,10 @@ P_TOKEN conv_token(L_TOKEN *token){
       break;
       
    }
-
+   if(new_token.type == NULL_TOKEN){
+      token_error("Made NULL_TOKEN", token);
+      exit(1);
+   }
    return new_token;
 }
 

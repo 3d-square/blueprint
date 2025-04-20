@@ -55,6 +55,7 @@ char *token_str(enum token_type type){
       case NONE: return "NONE";
       case CALL: return "CALL";
       case COMMA: return "COMMA";
+      case RETURN: return "RETURN";
       case PAREN_OPEN: return "PAREN_OPEN";
       case PAREN_CLOSE: return "PAREN_CLOSE";
       case FUNCTION: return "FUNCTION";
@@ -114,6 +115,8 @@ enum token_type get_token_type(char *str){
       type = COMMA;
    }else if(strcmp(str, "func") == 0){
       type = FUNCTION;
+   }else if(strcmp(str, "return") == 0){
+      type = RETURN;
    }else if(is_number(str)){
       type = NUMBER;
    }
