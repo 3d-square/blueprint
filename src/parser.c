@@ -199,19 +199,10 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             if(op_index + 1 >= length || tokens[op_index + 1].type != ID){
                token_error("del expectes a variable name", curr);
             }
-
-            char buffer[256];
-            enum token_type id = NULL_TOKEN;
             L_TOKEN *name = &tokens[op_index + 1];
-            sprintf(buffer, "%s_%s", get_function_prefix(stack, stack_head, in_function, ""), name->str);
+            enum token_type id;
 
-            id = (enum token_type)map_get(symbols, buffer);
-            if(id == NULL_TOKEN){
-               id = (enum token_type)map_get(symbols, name->str);
-            }else{ // variable is a function variable
-               free(curr->str);
-               curr->str = strdup(buffer);
-            }
+            name->str = id_search(name->str, stack, stack_head, in_function, symbols, &id);
 
             if(id == NULL_TOKEN){
                token_error("Cannot delete Functions or ID's that have not been defined", curr);
@@ -229,17 +220,8 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             
          } break;
          case ID:{
-            char buffer[256];
-            enum token_type id = NULL_TOKEN;
-            sprintf(buffer, "%s_%s", get_function_prefix(stack, stack_head, in_function, ""), curr->str);
-
-            id = (enum token_type)map_get(symbols, buffer);
-            if(id == NULL_TOKEN){
-               id = (enum token_type)map_get(symbols, curr->str);
-            }else{ // variable is a function variable
-               free(curr->str);
-               curr->str = strdup(buffer);
-            }
+            enum token_type id;
+            curr->str = id_search(curr->str, stack, stack_head, in_function, symbols, &id);
 
             if(id == NULL_TOKEN){
                token_errorf("ID: symbol[%s] is neither function nor variable", curr, curr->str);
@@ -638,4 +620,21 @@ char *get_random_str(int size){
    buffer[size] = '\0';
 
    return buffer;
+}
+
+char *id_search(char *name, P_TOKEN *stack, int stack_head, int in_func, map env, enum token_type *id){
+   char *result = name;
+   char buffer[256];
+   *id = NULL_TOKEN;
+   sprintf(buffer, "%s_%s", get_function_prefix(stack, stack_head, in_func, ""), name);
+
+   *id = (enum token_type)map_get(env, buffer);
+   if(*id == NULL_TOKEN){
+      *id = (enum token_type)map_get(env, name);
+   }else{ // variable is a function variable
+      free(name);
+      result = strdup(buffer);
+   }
+
+   return result;
 }
