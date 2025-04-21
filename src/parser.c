@@ -195,6 +195,39 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
 
             last_was_op = 1;
          break;
+         case DEL: {
+            if(op_index + 1 >= length || tokens[op_index + 1].type != ID){
+               token_error("del expectes a variable name", curr);
+            }
+
+            char buffer[256];
+            enum token_type id = NULL_TOKEN;
+            L_TOKEN *name = &tokens[op_index + 1];
+            sprintf(buffer, "%s_%s", get_function_prefix(stack, stack_head, in_function, ""), name->str);
+
+            id = (enum token_type)map_get(symbols, buffer);
+            if(id == NULL_TOKEN){
+               id = (enum token_type)map_get(symbols, name->str);
+            }else{ // variable is a function variable
+               free(curr->str);
+               curr->str = strdup(buffer);
+            }
+
+            if(id == NULL_TOKEN){
+               token_error("Cannot delete Functions or ID's that have not been defined", curr);
+               error_status = 1;
+               break;
+            }
+
+            free(curr->str);
+            map_delete_key(symbols, name->str);
+            name->type = DEL;
+            program[*exe_len] = conv_token(name);
+            ++(*exe_len);
+
+            op_index++;
+            
+         } break;
          case ID:{
             char buffer[256];
             enum token_type id = NULL_TOKEN;
@@ -569,6 +602,7 @@ P_TOKEN conv_token(L_TOKEN *token){
       break;
       case SET_NUM:
       case CALL:
+      case DEL:
       case ID:
          new_token.name = token->str;
       break;

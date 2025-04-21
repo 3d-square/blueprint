@@ -105,6 +105,8 @@ enum token_type get_token_type(char *str){
       type = PAREN_CLOSE;
    }else if(strcmp(str, "dump") == 0){
       type = PRINT;
+   }else if(strcmp(str, "del") == 0){
+      type = DEL;
    }else if(strcmp(str, "set") == 0){
       type = SET;
    }else if(strcmp(str, ";") == 0){

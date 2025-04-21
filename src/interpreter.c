@@ -94,7 +94,7 @@ void run_program(P_TOKEN *tokens, int length){
             stack_head--;
          }break;
          case VAR_NUM:{
-            variable_name = get_unique_id(id, tokens[op_index].name);
+            variable_name = get_unique_id(id, curr->name);
             number = p2d(map_get(env, variable_name));
 
             stack[stack_head++] = (STACK_VAL){
@@ -106,6 +106,10 @@ void run_program(P_TOKEN *tokens, int length){
 
             DEBUGF(2, "[OP] %s is %f", variable_name, number);
          }break;
+         case DEL: {
+            variable_name = get_unique_id(id, curr->name);
+            map_delete_key(env, variable_name);
+         } break;
          case SET_NUM:{
             variable_name = get_unique_id(id, tokens[op_index].name);
             number = stack[stack_head - 1].val.number;
@@ -160,7 +164,7 @@ char *get_unique_id(int id, char *id_name){
 }
 
 void token_free(P_TOKEN *token){
-   if(token->type == ID || token->type == VAR_NUM || token->type == VAR_STR || token->type == SET_STR || token->type == SET_NUM){
+   if(token->type == ID || token->type == VAR_NUM || token->type == VAR_STR || token->type == SET_STR || token->type == SET_NUM || token->type == DEL){
       DEBUGF(3, "[MEM] free(%s)", token->str);
       free(token->str);
    }else if(token->type == FUNCTION){
