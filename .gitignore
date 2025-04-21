@@ -1,4 +1,5 @@
 dflow
 libraylib.a
 ctrlf
-lang*
+lang
+lang-debug
