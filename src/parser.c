@@ -1,5 +1,6 @@
 #include <cutils/map.h>
 #include <cutils/list.h>
+#include <cutils/array.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,12 +13,21 @@ void *assert_alloc(size_t size);
 
 char *get_random_str(int size);
 
+array_struct(s_array, char *);
+array_struct(sa_array, s_array *);
+
+int s_array_contains(s_array *, char *);
+void free_s_array(s_array *);
+
 int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
    int stack_size = 0;  
    int error_status = 0;
    int stack_head = 0;
    P_TOKEN stack[MAX_TOKENS];
    P_TOKEN expression_stack[MAX_TOKENS];
+   sa_array scopes;
+   array_init(&scopes, 10);
+
    int in_function = 0;
    int expr_size = 0;
    int last_was_op = 1;
@@ -104,6 +114,14 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                error_status = 1;
                break;
             }
+            char buffer[256];
+            if(in_function){
+               const char *prefix = get_function_prefix(stack, stack_head, in_function, "");
+               sprintf(buffer, "%s_%s", prefix, name->str);
+               free(name->str);
+               name->str = strdup(buffer);
+            }
+            
             int next_idx = op_index + 1;
             /* Look for EXPR_END */
             while(next_idx < length && tokens[next_idx].type != EXPR_END){
@@ -126,6 +144,11 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
 
             name->type = SET_NUM;
             map_put(symbols, name->str, (void *)SET_NUM);
+
+            if(array_size(&scopes) > 0 && !s_array_contains(array_get(&scopes, array_size(&scopes) - 1), name->str)){
+               s_array *current_scope = array_get(&scopes, array_size(&scopes) - 1);
+               array_append(current_scope, name->str);
+            }
 
             if(next_idx == op_index + 1){
                program[*exe_len] = (P_TOKEN){
@@ -363,8 +386,10 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                error_status = 1;
                break;
             }
+
             free(curr->str);
             free(tokens[op_index + 2].str);
+
             int j;
             int num_args = 0;
             char *arg_names[25];
@@ -408,11 +433,17 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
 
             in_function++;
 
+            // Init function data
             func_data *function_data = assert_alloc(sizeof(func_data));
             function_data->name = function_name;
             function_data->num_args = num_args;
             function_data->prefix = prefix;
             function_data->args = assert_alloc(num_args * sizeof(char *));
+
+            // Init scope data
+            s_array *local_scope = assert_alloc(sizeof(s_array));
+            array_init(local_scope, 10);
+            array_append(&scopes, local_scope);
 
             for(int k = 0; k < num_args; ++k){
                function_data->args[k] = arg_names[k];
@@ -433,6 +464,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             ++(*exe_len);
 
             op_index += j + 1;
+
          } break;
          case RETURN: {
             if(stack_size < 1){
@@ -446,26 +478,43 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
          } break;
          case END: {
             if(stack_head <= 0){
-               token_error("END expects function definition", curr);
+               token_error("END expects control flow item definition", curr);
                error_status = 1;
                break;
             }
-            if(op_index <= 0 || tokens[op_index - 1].type != RETURN){
-               token_error("Last directive in function is ALWAYS return", &tokens[op_index - 1]);
-               error_status = 1;
-               break;
-            }
+            
             P_TOKEN func = stack[--stack_head];
-            if(func.type != FUNCTION){
-               token_errorf("Function ended in the middle of another statement. Got type %s", curr, token_str(func.type));
+            if(func.type == FUNCTION){
+               if(tokens[op_index - 1].type != RETURN){
+                  token_error("Last directive in function is ALWAYS return", &tokens[op_index - 1]);
+                  error_status = 1;
+                  break;
+               }
+               free(curr->str);
+               in_function--;
+               s_array *current_scope = array_get(&scopes, array_size(&scopes) - 1);
+               P_TOKEN ret = program[*exe_len - 1];
+               for(int i = 0; i < array_size(current_scope); ++i){
+                  // printf("scope var: %s\n", array_get(current_scope, i));
+                  program[*exe_len] = (P_TOKEN){
+                     .type = DEL,
+                     .name = strdup(array_get(current_scope, i))
+                  };
+                  map_delete_key(symbols, array_get(current_scope, i));
+                  ++(*exe_len);
+               }
+               program[*exe_len] = ret;
+               ++(*exe_len);
+               func.function->end = *exe_len - 1;
+   
+               for(int j = 0; j < func.function->num_args; ++j){
+                  map_delete_key(symbols, func.function->args[j]);
+               }
+               array_remove(&scopes, array_size(&scopes) - 1, free_s_array);
+            }else{
+               token_errorf("end is not a supported token for type %s", curr, token_str(func.type));
                error_status = 1;
                break;
-            }
-            free(curr->str);
-            in_function--;
-            func.function->end = *exe_len - 1;
-            for(int j = 0; j < func.function->num_args; ++j){
-               map_delete_key(symbols, func.function->args[j]);
             }
          } break;
          default:
@@ -495,6 +544,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
 
    map_destroy(symbols);
    map_destroy(functions);
+   array_delete(&scopes);
    return error_status;
 }
 
@@ -606,7 +656,7 @@ P_TOKEN conv_token(L_TOKEN *token){
 
 char *get_random_str(int size){
    static char buffer[256];
-   if(size < 1 || size > 255){
+   if(size < 1){
       return "";
    }
 
@@ -637,4 +687,19 @@ char *id_search(char *name, P_TOKEN *stack, int stack_head, int in_func, map env
    }
 
    return result;
+}
+
+int s_array_contains(s_array *arr, char *s){
+   for(int i = 0; i < array_size(arr); ++i){
+      if(strcmp(array_get(arr, i), s) == 0){
+         return 1;
+      }
+   }
+
+   return 0;
+}
+
+void free_s_array(s_array *arr){
+   free(arr->array);
+   free(arr);
 }
