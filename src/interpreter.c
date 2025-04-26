@@ -10,6 +10,8 @@
 char *get_unique_id(int id, char *id_name);
 void token_free(P_TOKEN *token);
 
+#define runtime_errorf(msg, ...) { fprintf(stderr, "[RUN TIME ERROR]: " msg "\n", __VA_ARGS__); exit(1); }
+
 void run_program(P_TOKEN *tokens, int length){
    STACK_VAL stack[MAX_TOKENS];
    int stack_head = 0;
@@ -95,6 +97,9 @@ void run_program(P_TOKEN *tokens, int length){
          }break;
          case VAR_NUM:{
             variable_name = get_unique_id(id, curr->name);
+            if(!map_contains(env, curr->name)){
+               runtime_errorf("Variable %s has been deleted prior to accessing it", variable_name);
+            }
             number = p2d(map_get(env, variable_name));
 
             stack[stack_head++] = (STACK_VAL){
