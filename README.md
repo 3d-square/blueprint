@@ -4,6 +4,7 @@
 |Program|Version|
 |-------|-------|
 |Raylib |  v5.5 |
+|cutils | current commit |
 
 ## Commentary
 I had no idea what I was making when I got into this.
@@ -18,3 +19,6 @@ Play arround with it. You may have fun! I will add a box in one of the
 corners that tells you what you ought to do for the next action.
 
 :)
+
+## language
+WIP
