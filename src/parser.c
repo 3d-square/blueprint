@@ -115,11 +115,14 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                break;
             }
             char buffer[256];
-            if(in_function){
+            int global_var = 0;
+            if(in_function && !map_contains(symbols, name->str)){
                const char *prefix = get_function_prefix(stack, stack_head, in_function, "");
                sprintf(buffer, "%s_%s", prefix, name->str);
                free(name->str);
                name->str = strdup(buffer);
+            }else{
+               global_var = 1;
             }
             
             int next_idx = op_index + 1;
@@ -145,7 +148,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             name->type = SET_NUM;
             map_put(symbols, name->str, (void *)SET_NUM);
 
-            if(array_size(&scopes) > 0 && !s_array_contains(array_get(&scopes, array_size(&scopes) - 1), name->str)){
+            if(array_size(&scopes) > 0 && !global_var && !s_array_contains(array_get(&scopes, array_size(&scopes) - 1), name->str)){
                s_array *current_scope = array_get(&scopes, array_size(&scopes) - 1);
                array_append(current_scope, name->str);
             }
