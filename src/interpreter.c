@@ -176,7 +176,7 @@ char *get_unique_id(int id, char *id_name){
 }
 
 void token_free(P_TOKEN *token){
-   if(token->type == ID || token->type == VAR_NUM || token->type == VAR_STR || token->type == SET_STR || token->type == SET_NUM){
+   if(token->type == ID || token->type == VAR_NUM || token->type == VAR_STR || token->type == SET_STR || token->type == SET_NUM /* || token->type == DEL */){
       DEBUGF( "[MEM] free(%s)", token->str);
       free(token->str);
    }else if(token->type == FUNCTION){

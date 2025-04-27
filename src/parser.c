@@ -491,7 +491,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                // printf("scope var: %s\n", array_get(current_scope, i));
                program[*exe_len] = (P_TOKEN){
                   .type = DEL,
-                  .name = strdup(array_get(current_scope, i))
+                  .name = array_get(current_scope, i)
                };
                map_delete_key(symbols, array_get(current_scope, i));
                ++(*exe_len);
