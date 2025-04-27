@@ -32,6 +32,11 @@ enum token_type{
    RETURN,
    CALL,
    DEL,
+   IF,
+   IF_COND,
+   ELSE_COND,
+   WHILE_COND,
+   COND_END,
    NONE
 };
 
@@ -44,6 +49,12 @@ typedef struct _func_data{
    char *prefix;
 } func_data;
 
+typedef struct cond_{
+   int start;
+   int end;
+   int next;
+} cond_data;
+
 typedef struct _token{
    enum token_type type;
    int col;
@@ -52,6 +63,7 @@ typedef struct _token{
       double number;
       char *str;
       func_data *function_data;
+      cond_data *cond_info;
    };
 } L_TOKEN;
 
@@ -60,6 +72,7 @@ typedef struct _p_token{
    union {
       double number;
       func_data *function;
+      cond_data *conditional;
       char *str;
       char *name;
    };

@@ -30,6 +30,7 @@ int main(int argc, char **argv){
 }
 
 int read_parse_file(const char *file_name, P_TOKEN *program){
+   DEBUG("reading file");
    L_TOKEN tokens[MAX_TOKENS];
    int index = 0;
    int program_size = 0;
@@ -38,6 +39,7 @@ int read_parse_file(const char *file_name, P_TOKEN *program){
    while(!lexer_is_empty()){
       tokens[index] = read_token();
       if(tokens[index].type == NONE) break;
+      DEBUGF("read: %s", token_str(tokens[index].type));
       index++;
    }
 

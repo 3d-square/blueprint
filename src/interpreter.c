@@ -150,6 +150,13 @@ void run_program(P_TOKEN *tokens, int length){
             // printf("returning to %d with value of %s:%f\n", inumber, token_str(stack[stack_head - 1].type), stack[stack_head - 1].val.number);
             op_index = inumber;
          } break;
+         case IF_COND: {
+            int cond = (int)stack[--stack_head].val.number;
+            if(!cond){
+               op_index = curr->conditional->end;
+            }
+            
+         } break;
          default:
             fprintf(stderr, "%d: Implement token %s[%d]\n", op_index, token_str(curr->type), curr->type);
             exit(1);
@@ -169,7 +176,7 @@ char *get_unique_id(int id, char *id_name){
 }
 
 void token_free(P_TOKEN *token){
-   if(token->type == ID || token->type == VAR_NUM || token->type == VAR_STR || token->type == SET_STR || token->type == SET_NUM || token->type == DEL){
+   if(token->type == ID || token->type == VAR_NUM || token->type == VAR_STR || token->type == SET_STR || token->type == SET_NUM){
       DEBUGF( "[MEM] free(%s)", token->str);
       free(token->str);
    }else if(token->type == FUNCTION){
@@ -180,6 +187,8 @@ void token_free(P_TOKEN *token){
       free(token->function->name);
       free(token->function->args);
       free(token->function);
+   }else if(token->type == IF_COND){
+      free(token->conditional);
    }
 }
 

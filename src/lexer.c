@@ -41,6 +41,10 @@ char *token_str(enum token_type type){
       case NUMBER: return "NUMBER";
       case STRING: return "STRING";
       case ID: return "NAME";
+      case IF: return "IF";
+      case IF_COND   : return "IF_COND"; 
+      case ELSE_COND : return "ELSE_COND"; 
+      case WHILE_COND: return "WHILE_COND"; 
       case SET: return "SET";
       case SET_NUM: return "SET_NUM";
       case VAR_NUM: return "VAR_NUM";
@@ -104,6 +108,8 @@ enum token_type get_token_type(char *str){
       type = PAREN_OPEN;
    }else if(strcmp(str, ")") == 0){
       type = PAREN_CLOSE;
+   }else if(strcmp(str, "if") == 0){
+      type = IF;
    }else if(strcmp(str, "dump") == 0){
       type = PRINT;
    }else if(strcmp(str, "del") == 0){
@@ -223,7 +229,7 @@ L_TOKEN read_token(){
         token.number = strtod(buffer, NULL);
      }else{
         token.str = strdup(buffer);
-        DEBUGF( "[MEM] strdup(%s)", token.str);
+        // DEBUGF( "[MEM] strdup(%s)", token.str);
      }
 
      if(lexer.data[lexer.index] == '\0'){
@@ -264,7 +270,7 @@ L_TOKEN read_token(){
       token.number = strtod(buffer, NULL);
    }else if(token_size > 0){
       token.str = strdup(buffer);
-      DEBUGF( "[MEM] strdup(%s)", token.str);
+      // DEBUGF( "[MEM] strdup(%s)", token.str);
    }
 
    if(lexer.data[lexer.index] == '\0'){

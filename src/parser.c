@@ -121,9 +121,9 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                sprintf(buffer, "%s_%s", prefix, name->str);
                free(name->str);
                name->str = strdup(buffer);
-            }else{
+            }/* else{
                global_var = 1;
-            }
+            } */
             
             int next_idx = op_index + 1;
             /* Look for EXPR_END */
@@ -148,7 +148,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             name->type = SET_NUM;
             map_put(symbols, name->str, (void *)SET_NUM);
 
-            if(array_size(&scopes) > 0 && !global_var && !s_array_contains(array_get(&scopes, array_size(&scopes) - 1), name->str)){
+            if(array_size(&scopes) > 0 && /* !global_var && */ !s_array_contains(array_get(&scopes, array_size(&scopes) - 1), name->str)){
                s_array *current_scope = array_get(&scopes, array_size(&scopes) - 1);
                array_append(current_scope, name->str);
             }
@@ -165,7 +165,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             stack[stack_head].type = SET_NUM;
    
             stack_head++;
-
+            last_was_op = 1;
             free(curr->str);
          }break;
          case EXPR_END:{
@@ -303,8 +303,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                }
 
                if(p_o != p_c){
-                  // printf("%d:%d\n", p_o, p_c);
-                  token_error("Parenthese missmatch in function call", curr);
+                  token_error("Parenthese mismatch in function call", curr);
                   error_status = 1;
                   break;
                }
@@ -485,40 +484,114 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                error_status = 1;
                break;
             }
-            
-            P_TOKEN func = stack[--stack_head];
-            if(func.type == FUNCTION){
+
+            // Free variables scoped to the if statement
+            s_array *current_scope = array_get(&scopes, array_size(&scopes) - 1);
+            for(int i = 0; i < array_size(current_scope); ++i){
+               // printf("scope var: %s\n", array_get(current_scope, i));
+               program[*exe_len] = (P_TOKEN){
+                  .type = DEL,
+                  .name = strdup(array_get(current_scope, i))
+               };
+               map_delete_key(symbols, array_get(current_scope, i));
+               ++(*exe_len);
+            }
+            array_remove(&scopes, array_size(&scopes) - 1, free_s_array);
+           
+            P_TOKEN token = stack[--stack_head];
+            if(token.type == FUNCTION){
                if(tokens[op_index - 1].type != RETURN){
                   token_error("Last directive in function is ALWAYS return", &tokens[op_index - 1]);
                   error_status = 1;
                   break;
                }
-               free(curr->str);
                in_function--;
-               s_array *current_scope = array_get(&scopes, array_size(&scopes) - 1);
                P_TOKEN ret = program[*exe_len - 1];
-               for(int i = 0; i < array_size(current_scope); ++i){
-                  // printf("scope var: %s\n", array_get(current_scope, i));
-                  program[*exe_len] = (P_TOKEN){
-                     .type = DEL,
-                     .name = strdup(array_get(current_scope, i))
-                  };
-                  map_delete_key(symbols, array_get(current_scope, i));
-                  ++(*exe_len);
-               }
                program[*exe_len] = ret;
                ++(*exe_len);
-               func.function->end = *exe_len - 1;
+               token.function->end = *exe_len - 1;
    
-               for(int j = 0; j < func.function->num_args; ++j){
-                  map_delete_key(symbols, func.function->args[j]);
+               for(int j = 0; j < token.function->num_args; ++j){
+                  map_delete_key(symbols, token.function->args[j]);
                }
-               array_remove(&scopes, array_size(&scopes) - 1, free_s_array);
+            }else if(token.type == IF_COND){
+               // Set the end of the if body
+               token.conditional->end = *exe_len - 1;
             }else{
-               token_errorf("end is not a supported token for type %s", curr, token_str(func.type));
+               token_errorf("end is not a supported token for type %s", curr, token_str(token.type));
                error_status = 1;
                break;
             }
+
+            free(curr->str);
+         } break;
+         case IF: {
+            if(op_index + 3 >= length){
+               token_error("if statement expects ( x )", curr);
+               error_status = 1;
+               break;
+            }
+            
+            if(tokens[op_index + 1].type != PAREN_OPEN){
+               token_errorf("if statments expects '(' not %s", curr, token_str(curr->type));
+               error_status = 1;
+               break;
+            }
+
+            int nested_paren = 0;
+            int p_o = 1;
+            int p_c = 0;
+            int j;
+            for(j = 2; j + op_index < length; ++j){
+               enum token_type current_type = tokens[op_index + j].type;
+               if(current_type == PAREN_OPEN){
+                  nested_paren++;
+                  p_o++;
+               }else if(current_type == PAREN_CLOSE){
+                  p_c++;
+                  nested_paren--;
+                  if(nested_paren < 0){
+                     free(tokens[op_index + j].str);
+                     break;
+                  }
+               }
+            }
+
+            if(p_o != p_c){
+               token_error("Parenthese mismatch in if statement", curr);
+               error_status = 1;
+               break;
+            }
+
+            if(j == 2){
+               token_error("if statement with empty conditional", curr);
+               error_status = 1;
+               break;
+            }
+
+            free(curr->str);
+            cond_data *cond_info = assert_alloc(sizeof(cond_data));
+            cond_info->start = *exe_len;
+            cond_info->end = -1;
+            cond_info->next = -1;
+
+            free(tokens[op_index + 1].str);
+            tokens[op_index + j].type = IF_COND;
+            tokens[op_index + j].cond_info = cond_info;
+
+            // Init scope data
+            s_array *local_scope = assert_alloc(sizeof(s_array));
+            array_init(local_scope, 10);
+            array_append(&scopes, local_scope);
+
+            op_index += 1;
+            last_was_op = 1;
+         } break;
+         case IF_COND: {
+            stack[stack_head] = conv_token(curr);
+            program[*exe_len] = stack[stack_head++];
+            ++(*exe_len);
+            last_was_op = 1;
          } break;
          default:
             token_errorf("Cannot parse %s", curr, token_str(curr->type));
@@ -643,6 +716,9 @@ P_TOKEN conv_token(L_TOKEN *token){
       break;
       case FUNCTION:
          new_token.function = token->function_data;
+      break;
+      case IF_COND:
+         new_token.conditional = token->cond_info;
       break;
       default:
          token_errorf("%s token conversion is not implemented yet\n", token, token_str(token->type));
