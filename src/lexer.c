@@ -223,7 +223,7 @@ L_TOKEN read_token(){
         token.number = strtod(buffer, NULL);
      }else{
         token.str = strdup(buffer);
-        DEBUGF(3, "[MEM] strdup(%s)", token.str);
+        DEBUGF( "[MEM] strdup(%s)", token.str);
      }
 
      if(lexer.data[lexer.index] == '\0'){
@@ -264,7 +264,7 @@ L_TOKEN read_token(){
       token.number = strtod(buffer, NULL);
    }else if(token_size > 0){
       token.str = strdup(buffer);
-      DEBUGF(3, "[MEM] strdup(%s)", token.str);
+      DEBUGF( "[MEM] strdup(%s)", token.str);
    }
 
    if(lexer.data[lexer.index] == '\0'){

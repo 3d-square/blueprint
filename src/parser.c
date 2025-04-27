@@ -629,7 +629,7 @@ P_TOKEN conv_token(L_TOKEN *token){
       case RETURN:
       case PAREN_OPEN:
       case PAREN_CLOSE:
-         DEBUGF(3, "[MEM] free(%s)", token->str);
+         DEBUGF( "[MEM] free(%s)", token->str);
          free(token->str);
       break;
       case NUMBER:

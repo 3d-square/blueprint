@@ -41,14 +41,14 @@ int read_parse_file(const char *file_name, P_TOKEN *program){
       index++;
    }
 
-   DEBUGF(1, "[PROGRAM] Num Tokens: %d", index);
+   DEBUGF( "[PROGRAM] Num Tokens: %d", index);
    lexer_destroy();
    if(parse_program(tokens, index, program, &program_size)){
       fprintf(stderr, "Parsing failed\n");
       return -1;
    }
 
-   DEBUGF(1, "[PROGRAM] Program size: %d", program_size);
+   DEBUGF( "[PROGRAM] Program size: %d", program_size);
    return program_size;
 }
 

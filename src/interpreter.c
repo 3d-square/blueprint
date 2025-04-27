@@ -22,13 +22,13 @@ void run_program(P_TOKEN *tokens, int length){
    int id = 0;
    char *variable_name;
    map env = map_create(NULL);
-/*
-   printf("function tokens\n");
+
+   DEBUG( "\nfunction tokens\n");
    for(int i = 0; i < length; ++i){
-      printf("%s\n", token_str(tokens[i].type));
+      DEBUGF( "%s", token_str(tokens[i].type));
    }
-   printf("function tokens\n\n");
-*/
+   DEBUG( "\nfunction tokens\n\n");
+
    for(int op_index = 0; op_index < length; ++op_index){
       P_TOKEN *curr = &tokens[op_index];
       switch(curr->type){
@@ -39,14 +39,14 @@ void run_program(P_TOKEN *tokens, int length){
          case NUMBER:{
             stack[stack_head].val.number = curr->number;
             stack[stack_head].type = curr->type;
-            DEBUGF(2, "[OP] pushed: %f", curr->number);
+            DEBUGF( "[OP] pushed: %f", curr->number);
             stack_head++;
          }break;
          case PLUS:{
             first = stack[stack_head - 2].val.number;
             second = stack[stack_head - 1].val.number;
 
-            DEBUGF(2, "[OP] %f + %f", first, second);
+            DEBUGF( "[OP] %f + %f", first, second);
 
             stack[stack_head - 2] = (STACK_VAL){
                .type = NUMBER,
@@ -58,7 +58,7 @@ void run_program(P_TOKEN *tokens, int length){
             first = stack[stack_head - 2].val.number;
             second = stack[stack_head - 1].val.number;
 
-            DEBUGF(2, "[OP] %f - %f", first, second);
+            DEBUGF( "[OP] %f - %f", first, second);
             stack[stack_head - 2] = (STACK_VAL){
                .type = NUMBER,
                .val = (BYTES_8){.number = first - second}
@@ -69,7 +69,7 @@ void run_program(P_TOKEN *tokens, int length){
             first = stack[stack_head - 2].val.number;
             second = stack[stack_head - 1].val.number;
 
-            DEBUGF(2, "[OP] %f / %f", first, second);
+            DEBUGF( "[OP] %f / %f", first, second);
             stack[stack_head - 2] = (STACK_VAL){
                .type = NUMBER,
                .val = (BYTES_8){.number = first / second}
@@ -80,7 +80,7 @@ void run_program(P_TOKEN *tokens, int length){
             first = stack[stack_head - 2].val.number;
             second = stack[stack_head - 1].val.number;
 
-            DEBUGF(2, "[OP] %f * %f", first, second);
+            DEBUGF( "[OP] %f * %f", first, second);
             stack[stack_head - 2] = (STACK_VAL){
                .type = NUMBER,
                .val = (BYTES_8){.number = first * second}
@@ -97,7 +97,7 @@ void run_program(P_TOKEN *tokens, int length){
          }break;
          case VAR_NUM:{
             variable_name = get_unique_id(id, curr->name);
-            if(!map_contains(env, curr->name)){
+            if(!map_contains(env, variable_name)){
                runtime_errorf("Variable %s has been deleted prior to accessing it", variable_name);
             }
             number = p2d(map_get(env, variable_name));
@@ -109,7 +109,7 @@ void run_program(P_TOKEN *tokens, int length){
                }
             };
 
-            DEBUGF(2, "[OP] %s is %f", variable_name, number);
+            DEBUGF( "[OP] %s is %f", variable_name, number);
          }break;
          case DEL: {
             variable_name = get_unique_id(id, curr->name);
@@ -120,7 +120,7 @@ void run_program(P_TOKEN *tokens, int length){
             number = stack[stack_head - 1].val.number;
 
             map_put(env, variable_name, d2p(number));
-            DEBUGF(2, "[OP] set %s = %f", variable_name, number);
+            DEBUGF( "[OP] set %s = %f", variable_name, number);
             stack_head--;
          }break;
          case FUNCTION: {
@@ -128,7 +128,7 @@ void run_program(P_TOKEN *tokens, int length){
          } break;
          case CALL: {
             const func_data *func_info = curr->function;
-
+            DEBUGF("Calling function %s", func_info->name);
             for(int i = 0; i < func_info->num_args; ++i){
                // printf("variable %s is %f\n", func_info->args[i], stack[stack_head - func_info->num_args + i].val.number);
                map_put(env, get_unique_id(id, func_info->args[i]), d2p(stack[stack_head - func_info->num_args + i].val.number));
@@ -170,7 +170,7 @@ char *get_unique_id(int id, char *id_name){
 
 void token_free(P_TOKEN *token){
    if(token->type == ID || token->type == VAR_NUM || token->type == VAR_STR || token->type == SET_STR || token->type == SET_NUM || token->type == DEL){
-      DEBUGF(3, "[MEM] free(%s)", token->str);
+      DEBUGF( "[MEM] free(%s)", token->str);
       free(token->str);
    }else if(token->type == FUNCTION){
       for(int i = 0; i < token->function->num_args; ++i){
