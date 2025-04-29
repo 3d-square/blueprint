@@ -34,6 +34,7 @@ enum token_type{
    DEL,
    IF,
    IF_COND,
+   ELSE,
    ELSE_COND,
    WHILE_COND,
    COND_END,

@@ -19,6 +19,9 @@ array_struct(sa_array, s_array *);
 int s_array_contains(s_array *, char *);
 void free_s_array(s_array *);
 
+void start_scope(sa_array *scopes);
+void end_scope(sa_array *scopes, map symbols, P_TOKEN *program, int *exe_len);
+
 int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
    int stack_size = 0;  
    int error_status = 0;
@@ -115,7 +118,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                break;
             }
             char buffer[256];
-            int global_var = 0;
+            // int global_var = 0;
             if(in_function && !map_contains(symbols, name->str)){
                const char *prefix = get_function_prefix(stack, stack_head, in_function, "");
                sprintf(buffer, "%s_%s", prefix, name->str);
@@ -443,9 +446,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             function_data->args = assert_alloc(num_args * sizeof(char *));
 
             // Init scope data
-            s_array *local_scope = assert_alloc(sizeof(s_array));
-            array_init(local_scope, 10);
-            array_append(&scopes, local_scope);
+            start_scope(&scopes);
 
             for(int k = 0; k < num_args; ++k){
                function_data->args[k] = arg_names[k];
@@ -486,17 +487,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }
 
             // Free variables scoped to the if statement
-            s_array *current_scope = array_get(&scopes, array_size(&scopes) - 1);
-            for(int i = 0; i < array_size(current_scope); ++i){
-               // printf("scope var: %s\n", array_get(current_scope, i));
-               program[*exe_len] = (P_TOKEN){
-                  .type = DEL,
-                  .name = array_get(current_scope, i)
-               };
-               map_delete_key(symbols, array_get(current_scope, i));
-               ++(*exe_len);
-            }
-            array_remove(&scopes, array_size(&scopes) - 1, free_s_array);
+            end_scope(&scopes, symbols, program, exe_len);
            
             P_TOKEN token = stack[--stack_head];
             if(token.type == FUNCTION){
@@ -517,6 +508,9 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }else if(token.type == IF_COND){
                // Set the end of the if body
                token.conditional->end = *exe_len - 1;
+               token.conditional->next = *exe_len - 1;
+            }else if(token.type == COND_END){
+               token.conditional->end = *exe_len - 1;
             }else{
                token_errorf("end is not a supported token for type %s", curr, token_str(token.type));
                error_status = 1;
@@ -536,6 +530,11 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                token_errorf("if statments expects '(' not %s", curr, token_str(curr->type));
                error_status = 1;
                break;
+            }
+   
+            if(stack_head > 0 && stack[stack_head - 1].type == COND_END){
+               end_scope(&scopes, symbols, program, exe_len);
+               stack_head--;
             }
 
             int nested_paren = 0;
@@ -580,11 +579,29 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             tokens[op_index + j].cond_info = cond_info;
 
             // Init scope data
-            s_array *local_scope = assert_alloc(sizeof(s_array));
-            array_init(local_scope, 10);
-            array_append(&scopes, local_scope);
+            start_scope(&scopes);
 
             op_index += 1;
+            last_was_op = 1;
+         } break;
+         case ELSE: {
+            if(stack_head <= 0 || stack[stack_head - 1].type != IF_COND){
+               token_error("else statement expects if statement", curr);
+               error_status = 1;
+               break;
+            }
+
+            free(curr->str);
+            // Free variables scoped to the if statement
+            end_scope(&scopes, symbols, program, exe_len);
+
+            // Init scope data
+            start_scope(&scopes);
+
+            stack[stack_head - 1].conditional->next = *exe_len;
+            stack[stack_head - 1].type = COND_END;
+            program[*exe_len] = stack[stack_head - 1];
+            ++(*exe_len);
             last_was_op = 1;
          } break;
          case IF_COND: {
@@ -781,4 +798,23 @@ int s_array_contains(s_array *arr, char *s){
 void free_s_array(s_array *arr){
    free(arr->array);
    free(arr);
+}
+
+void start_scope(sa_array *scopes){
+   s_array *local_scope = assert_alloc(sizeof(s_array));
+   array_init(local_scope, 10);
+   array_append(scopes, local_scope);
+}
+
+void end_scope(sa_array *scopes, map symbols, P_TOKEN *program, int *exe_len){
+   s_array *current_scope = array_get(scopes, array_size(scopes) - 1);
+   for(int i = 0; i < array_size(current_scope); ++i){
+      program[*exe_len] = (P_TOKEN){
+         .type = DEL,
+         .name = array_get(current_scope, i)
+      };
+      map_delete_key(symbols, array_get(current_scope, i));
+      ++(*exe_len);
+   }
+   array_remove(scopes, array_size(scopes) - 1, free_s_array);
 }

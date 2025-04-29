@@ -60,6 +60,7 @@ char *token_str(enum token_type type){
       case CALL: return "CALL";
       case DEL: return "DEL";
       case COMMA: return "COMMA";
+      case COND_END: return "COND_END";
       case RETURN: return "RETURN";
       case PAREN_OPEN: return "PAREN_OPEN";
       case PAREN_CLOSE: return "PAREN_CLOSE";
@@ -114,6 +115,8 @@ enum token_type get_token_type(char *str){
       type = PRINT;
    }else if(strcmp(str, "del") == 0){
       type = DEL;
+   }else if(strcmp(str, "else") == 0){
+      type = ELSE;
    }else if(strcmp(str, "set") == 0){
       type = SET;
    }else if(strcmp(str, ";") == 0){

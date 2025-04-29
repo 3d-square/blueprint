@@ -153,9 +153,12 @@ void run_program(P_TOKEN *tokens, int length){
          case IF_COND: {
             int cond = (int)stack[--stack_head].val.number;
             if(!cond){
-               op_index = curr->conditional->end;
+               op_index = curr->conditional->next;
             }
             
+         } break;
+         case COND_END: {
+            op_index = curr->conditional->end;
          } break;
          default:
             fprintf(stderr, "%d: Implement token %s[%d]\n", op_index, token_str(curr->type), curr->type);
