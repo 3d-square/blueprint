@@ -117,16 +117,32 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                error_status = 1;
                break;
             }
-            char buffer[256];
-            // int global_var = 0;
-            if(in_function && !map_contains(symbols, name->str)){
-               const char *prefix = get_function_prefix(stack, stack_head, in_function, "");
-               sprintf(buffer, "%s_%s", prefix, name->str);
-               free(name->str);
-               name->str = strdup(buffer);
-            }/* else{
-               global_var = 1;
-            } */
+            int scoped = 0;
+            enum token_type id_type;
+            name->str = id_search(name->str, stack, stack_head, in_function, symbols, &id_type);
+            DEBUGF("found %s var", name->str);
+            if(id_type != NULL_TOKEN){
+               scoped = 1;
+            }
+            // if(in_function && !map_contains(symbols, name->str)){
+            //    const char *prefix = get_function_prefix(stack, stack_head, in_function, "");
+            //    sprintf(buffer, "%s_%s", prefix, name->str);
+            //    free(name->str);
+            //    name->str = strdup(buffer);
+            // }else if(map_contains(symbols, name->str)){
+            //    DEBUGF("%s is scoped", name->str);
+            //    scoped = 1;
+            // }
+
+            // for(int i = 0; i < array_size(&scopes) && !scoped; ++i){
+            //    s_array *current_scope = array_get(&scopes, i);
+            //    for(int j = 0; j < array_size(current_scope) && !scoped; ++i){
+            //       if(strcmp(name->str, array_get(current_scope, j)) == 0){
+            //          DEBUGF("%s is already in a scope\n", name->str);
+            //          scoped = 1;
+            //       }
+            //    }
+            // }
             
             int next_idx = op_index + 1;
             /* Look for EXPR_END */
@@ -151,7 +167,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             name->type = SET_NUM;
             map_put(symbols, name->str, (void *)SET_NUM);
 
-            if(array_size(&scopes) > 0 && /* !global_var && */ !s_array_contains(array_get(&scopes, array_size(&scopes) - 1), name->str)){
+            if(array_size(&scopes) > 0 && !scoped && !s_array_contains(array_get(&scopes, array_size(&scopes) - 1), name->str)){
                s_array *current_scope = array_get(&scopes, array_size(&scopes) - 1);
                array_append(current_scope, name->str);
             }
@@ -416,6 +432,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                free(var->str);
                arg_names[num_args++] = strdup(arg_name_buffer);
                map_put(symbols, arg_name_buffer, (void *)SET_NUM);
+               DEBUGF("%s: %s", function_name, arg_name_buffer);
                if(next->type == COMMA){
                   // There will be more variables
                   free(next->str);
@@ -511,12 +528,28 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                token.conditional->next = *exe_len - 1;
             }else if(token.type == COND_END){
                token.conditional->end = *exe_len - 1;
+               P_TOKEN curr_t;
+               while(stack_head > 0){
+                  curr_t = stack[stack_head - 1];
+
+                  if(curr_t.type != COND_END && curr_t.type != IF_COND){
+                     token_error("Else if statement mangled with other type of statement", curr);
+                     error_status = 1;
+                     goto ERR;
+                  }else if(curr_t.type == COND_END){
+                     curr_t.conditional->end = *exe_len - 1;     
+                  }else{
+                     curr_t.conditional->end = *exe_len - 1;     
+                  }
+                  stack_head--;
+               }
             }else{
                token_errorf("end is not a supported token for type %s", curr, token_str(token.type));
                error_status = 1;
                break;
             }
 
+            last_was_op = 1;
             free(curr->str);
          } break;
          case IF: {
@@ -534,7 +567,6 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
    
             if(stack_head > 0 && stack[stack_head - 1].type == COND_END){
                end_scope(&scopes, symbols, program, exe_len);
-               stack_head--;
             }
 
             int nested_paren = 0;
@@ -774,6 +806,8 @@ char *id_search(char *name, P_TOKEN *stack, int stack_head, int in_func, map env
    *id = NULL_TOKEN;
    sprintf(buffer, "%s_%s", get_function_prefix(stack, stack_head, in_func, ""), name);
 
+   DEBUGF("looking for %s", buffer);
+
    *id = (enum token_type)map_get(env, buffer);
    if(*id == NULL_TOKEN){
       *id = (enum token_type)map_get(env, name);
@@ -813,6 +847,7 @@ void end_scope(sa_array *scopes, map symbols, P_TOKEN *program, int *exe_len){
          .type = DEL,
          .name = array_get(current_scope, i)
       };
+      DEBUGF("Removing %s from scope", array_get(current_scope, i));
       map_delete_key(symbols, array_get(current_scope, i));
       ++(*exe_len);
    }

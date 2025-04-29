@@ -1,7 +1,9 @@
-if ( 0 )
+if ( 1 )
    1 dump
 else if ( 0 )
-   2 dump
-else
    3 dump
+else
+   2 dump
 end
+
+12 dump
