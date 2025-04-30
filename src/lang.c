@@ -7,6 +7,9 @@
 #include <debug.h>
 #include <language.h>
 
+sb *file_lines = NULL;
+size_t num_lines = 0;
+
 int main(int argc, char **argv){
    P_TOKEN program[MAX_TOKENS];
    int size;
@@ -24,10 +27,12 @@ int main(int argc, char **argv){
          fprintf(stderr, "Parses exited with errors\n");
          return 1;
       }
+      sb_free_list(file_lines, num_lines);
    }
 
    return 0;
 }
+
 
 int read_parse_file(const char *file_name, P_TOKEN *program){
    DEBUG("reading file");
@@ -45,6 +50,9 @@ int read_parse_file(const char *file_name, P_TOKEN *program){
 
    DEBUGF( "[PROGRAM] Num Tokens: %d", index);
    lexer_destroy();
+
+   file_lines = sb_read_lines(file_name, &num_lines);
+   
    if(parse_program(tokens, index, program, &program_size)){
       fprintf(stderr, "Parsing failed\n");
       return -1;

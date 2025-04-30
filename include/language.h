@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <cutils/list.h>
+#include <cutils/stringbuilder.h>
 
 #define MAX_TOKENS 1024
 
@@ -92,8 +93,11 @@ typedef struct _stack_val{
    BYTES_8 val;
 } STACK_VAL;
 
-#define token_errorf(fmt, tkn, ...) fprintf(stderr, "[%d:%d]: " fmt "\n", (tkn)->line, (tkn)->col, __VA_ARGS__)
-#define token_error(fmt, tkn) fprintf(stderr, "[%d:%d]: " fmt "\n", (tkn)->line, (tkn)->col)
+#define token_errorf(fmt, tkn, ...) fprintf(stderr, "[%d:%d]: " fmt "\n      '%s'\n", (tkn)->line, (tkn)->col, __VA_ARGS__, sb_str(&(file_lines[(tkn)->line - 1]), _sb_line_buffer, sizeof(_sb_line_buffer)))
+#define token_error(fmt, tkn) fprintf(stderr, "[%d:%d]: " fmt "\n      '%s'\n", (tkn)->line, (tkn)->col, sb_str(&(file_lines[(tkn)->line - 1]), _sb_line_buffer, sizeof(_sb_line_buffer)))
+
+extern sb *file_lines;
+extern size_t num_lines;
 
 char *function_as_str(const func_data *function);
 

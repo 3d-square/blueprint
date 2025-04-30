@@ -16,6 +16,8 @@ char *get_random_str(int size);
 array_struct(s_array, char *);
 array_struct(sa_array, s_array *);
 
+char _sb_line_buffer[1024];
+
 int s_array_contains(s_array *, char *);
 void free_s_array(s_array *);
 
