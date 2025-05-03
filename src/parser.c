@@ -22,7 +22,7 @@ int s_array_contains(s_array *, char *);
 void free_s_array(s_array *);
 
 void start_scope(sa_array *scopes);
-void end_scope(sa_array *scopes, map symbols, P_TOKEN *program, int *exe_len);
+void end_scope(sa_array *scopes, map symbols, P_TOKEN *program, int *exe_len, int line);
 
 int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
    int stack_size = 0;  
@@ -42,7 +42,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
    srand(142);
 
    for(int op_index = 0; op_index < length && !error_status; ++op_index){
-      L_TOKEN *curr = &tokens[ op_index];
+      L_TOKEN *curr = &tokens[op_index];
       switch(curr->type){
          case NUMBER:{
             if(last_was_op == 0){
@@ -178,6 +178,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
                program[*exe_len] = (P_TOKEN){
                   .type = NUMBER,
                   .number = 0,
+                  .line = curr->line,
                };
                ++(*exe_len);
             }
@@ -506,7 +507,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }
 
             // Free variables scoped to the if statement
-            end_scope(&scopes, symbols, program, exe_len);
+            end_scope(&scopes, symbols, program, exe_len, curr->line);
            
             P_TOKEN token = stack[--stack_head];
             if(token.type == FUNCTION){
@@ -568,7 +569,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
             }
    
             if(stack_head > 0 && stack[stack_head - 1].type == COND_END){
-               end_scope(&scopes, symbols, program, exe_len);
+               end_scope(&scopes, symbols, program, exe_len, curr->line);
             }
 
             int nested_paren = 0;
@@ -627,7 +628,7 @@ int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len){
 
             free(curr->str);
             // Free variables scoped to the if statement
-            end_scope(&scopes, symbols, program, exe_len);
+            end_scope(&scopes, symbols, program, exe_len, curr->line);
 
             // Init scope data
             start_scope(&scopes);
@@ -739,6 +740,7 @@ int token_prec(enum token_type type){
 P_TOKEN conv_token(L_TOKEN *token){
    P_TOKEN new_token = {
       .type = token->type,
+      .line = token->line,
       .str = NULL,
    };
 
@@ -842,12 +844,13 @@ void start_scope(sa_array *scopes){
    array_append(scopes, local_scope);
 }
 
-void end_scope(sa_array *scopes, map symbols, P_TOKEN *program, int *exe_len){
+void end_scope(sa_array *scopes, map symbols, P_TOKEN *program, int *exe_len, int line){
    s_array *current_scope = array_get(scopes, array_size(scopes) - 1);
    for(int i = 0; i < array_size(current_scope); ++i){
       program[*exe_len] = (P_TOKEN){
          .type = DEL,
-         .name = array_get(current_scope, i)
+         .name = array_get(current_scope, i),
+         .line = line,
       };
       DEBUGF("Removing %s from scope", array_get(current_scope, i));
       map_delete_key(symbols, array_get(current_scope, i));

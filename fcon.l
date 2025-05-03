@@ -9,7 +9,7 @@ func add_if( v1 , v2 )
    return
 end
 
-add_if( 2, 1 )
+add_if( 2, 0 )
 dump
 
 add_if( 2, 1 )

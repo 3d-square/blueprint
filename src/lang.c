@@ -15,14 +15,23 @@ int main(int argc, char **argv){
    int size;
 
    if(argc < 2){
-      fprintf(stderr, "usage: %s [file] ...\n", argv[0]);
+      fprintf(stderr, "usage: %s [file] ... <debug>\n", argv[0]);
       return 1;
    }
 
-   for(int i = 1; i < argc; ++i){
+   int i = 1;
+   int debug = 0;
+   if(strncmp(argv[1], "-d=", 3) == 0){
+      if(strcmp(argv[1] + 3, "y") == 0 || strcmp(argv[1] + 3, "yes") == 0){
+         debug = 1;
+      }
+      i++;
+   }
+
+   for(; i < argc; ++i){
       printf("Running file: %s\n", argv[i]);
       if((size = read_parse_file(argv[i], program)) != -1){
-         run_program(program, size);
+         run_program(program, size, debug);
       }else{
          fprintf(stderr, "Parses exited with errors\n");
          return 1;

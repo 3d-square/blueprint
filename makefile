@@ -5,7 +5,7 @@ RPATH=-Wl,-rpath,$(HOME)/cutils/bin/
 CFLAGS=-Wall -Wextra
 DEFS=
 SRCS=src/main.c src/flow.c src/utils.c src/panel.c src/globals.c src/prints.c src/ui.c src/directory_info.c src/filewin.c
-LANG_SRCS=src/parser.c src/lang.c src/interpreter.c src/lexer.c
+LANG_SRCS=src/lang.c src/parser.c src/interpreter.c src/lexer.c
 
 all: ctrlf lang
 

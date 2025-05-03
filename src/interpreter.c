@@ -12,7 +12,9 @@ void token_free(P_TOKEN *token);
 
 #define runtime_errorf(msg, ...) { fprintf(stderr, "[RUN TIME ERROR]: " msg "\n", __VA_ARGS__); exit(1); }
 
-void run_program(P_TOKEN *tokens, int length){
+void debug_opt(STACK_VAL stack[], int stack_head, int program_opt, P_TOKEN *curr_val, map env);
+
+void run_program(P_TOKEN *tokens, int length, int debug){
    STACK_VAL stack[MAX_TOKENS];
    int stack_head = 0;
    double first;
@@ -31,6 +33,7 @@ void run_program(P_TOKEN *tokens, int length){
 
    for(int op_index = 0; op_index < length; ++op_index){
       P_TOKEN *curr = &tokens[op_index];
+      if(debug) debug_opt(stack, stack_head, op_index, curr, env);
       switch(curr->type){
          case STRING:{
             fprintf(stderr, "Strings are not implemented\n");
@@ -140,11 +143,13 @@ void run_program(P_TOKEN *tokens, int length){
                   .inumber = op_index
                }
             };
+            printf("return to %d\n", op_index);
 
             op_index = func_info->start;
          } break;
          case RETURN: {
             inumber = stack[stack_head - 2].val.inumber;
+            printf("returning to %d\n", inumber);
             stack[stack_head - 2] = stack[stack_head - 1];
             stack_head--;
             // printf("returning to %d with value of %s:%f\n", inumber, token_str(stack[stack_head - 1].type), stack[stack_head - 1].val.number);
@@ -195,4 +200,60 @@ void token_free(P_TOKEN *token){
    }
 }
 
+void debug_opt(STACK_VAL stack[], int stack_head, int program_opt, P_TOKEN *curr_val, map env){
+   char command[80];
+   static int line = 0;
+   static int run = 0;
+   static int breakpoints[100];
+   static int num_breakpoints = 0;
 
+   for(int i = 0; i < num_breakpoints; ++i){
+      if(program_opt == breakpoints[i]){
+         run = 0;
+         break;
+      }
+   }
+
+   int b = 0;
+
+   if(run){
+      if(line != curr_val->line){
+         run = 0;
+         line = curr_val->line;
+      }else{
+         return;
+      }
+   }
+   int repeat = 1;
+
+   while(repeat){
+      fgets(command, sizeof(command), stdin);
+      repeat = 0;
+
+      if(strncmp(command, "line", 4) == 0){
+         if(curr_val->line != -1){
+            printf("line[%d]: %s\n", curr_val->line, sb_str(&file_lines[curr_val->line - 1], _sb_line_buffer, sizeof(_sb_line_buffer)));
+         }
+      }else if(strncmp(command, "run", 3) == 0){
+         run = 1;
+         line = curr_val->line;
+         printf("ran line: %s\n", sb_str(&file_lines[curr_val->line - 1], _sb_line_buffer, sizeof(_sb_line_buffer)));
+      }else if(strncmp(command, "stack", 5) == 0){
+         printf("Stack size: %d\n", stack_head);
+         for(int i = stack_head - 1; i >= 0; --i){
+            if(stack[i].type == NUMBER){
+               printf("%f = %d\n", stack[i].val.number, stack[i].val.inumber);
+            }else{
+               printf("Stack type %s is not implemented\n", token_str(stack[i].type));
+               exit(1);
+            }
+         }
+      }else if(sscanf(command, "break %d", &b) == 1){
+         breakpoints[num_breakpoints++] = b;
+         repeat = 1;
+      }else{
+         program_opt++;
+         (void)env;
+      }
+   }
+}

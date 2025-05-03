@@ -71,6 +71,7 @@ typedef struct _token{
 
 typedef struct _p_token{
    enum token_type type;
+   int line;
    union {
       double number;
       func_data *function;
@@ -93,11 +94,18 @@ typedef struct _stack_val{
    BYTES_8 val;
 } STACK_VAL;
 
+struct debugger{
+   int line;
+   char op;
+};
+
 #define token_errorf(fmt, tkn, ...) fprintf(stderr, "[%d:%d]: " fmt "\n      '%s'\n", (tkn)->line, (tkn)->col, __VA_ARGS__, sb_str(&(file_lines[(tkn)->line - 1]), _sb_line_buffer, sizeof(_sb_line_buffer)))
 #define token_error(fmt, tkn) fprintf(stderr, "[%d:%d]: " fmt "\n      '%s'\n", (tkn)->line, (tkn)->col, sb_str(&(file_lines[(tkn)->line - 1]), _sb_line_buffer, sizeof(_sb_line_buffer)))
 
 extern sb *file_lines;
 extern size_t num_lines;
+
+extern char _sb_line_buffer[1024];
 
 char *function_as_str(const func_data *function);
 
@@ -123,7 +131,7 @@ int read_parse_file(const char *file_name, P_TOKEN *program);
 
 int parse_program(L_TOKEN *tokens, int length, P_TOKEN *program, int *exe_len);
 
-void run_program(P_TOKEN *tokens, int length);
+void run_program(P_TOKEN *tokens, int length, int debug);
 
 P_TOKEN conv_token(L_TOKEN *token);
 
